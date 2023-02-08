@@ -1,2 +1,2 @@
 # matlab-fp-analysis-suite
-MATLAB scripts for analyzing various fiber photometry experiments
+ A suite of analysis scripts for analyzing fiber photometry data with MATLAB
