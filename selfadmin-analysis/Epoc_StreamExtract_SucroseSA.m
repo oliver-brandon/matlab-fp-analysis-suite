@@ -3,7 +3,7 @@
 % Clear workspace and close existing figures.
 % Add data
 clear all; clc; close all;
-tanks2analyze = 1; % 1=batch, 2=single
+tanks2analyze = 2; % 1=batch, 2=single
 streamAorC = 2; % 1=465A, 2=465C
 epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
 

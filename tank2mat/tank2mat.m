@@ -25,10 +25,16 @@ if savDir == 0
 end
 tic
 myFiles = dir(myDir); %gets all tanks in directory%
-myFiles = myFiles(~ismember({myFiles.name},{'.','..'}));
+myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 numFiles = length(myFiles);
 totFiles = numFiles; % variable to track how many files actually get saved
+LOAD_BAR = waitbar(0,'1 %','Name','Extracting tank files...',...
+    'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
+setappdata(LOAD_BAR,'canceling',0)
 for i = 1:numFiles
+    if getappdata(LOAD_BAR,'canceling')
+        break
+    end
     BLOCKPATH = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(BLOCKPATH);
     newfilename = strcat(name,'.mat');
@@ -44,7 +50,10 @@ for i = 1:numFiles
     disp("Saving...")
     save(file_pathname,"data")
     disp("Done.")
+    waitbar(i/numFiles,LOAD_BAR,sprintf('Progress: %d %%',floor(i/numFiles*100)));
+    pause(0.1)
 end
+delete(LOAD_BAR)
 disp("Successfully extracted and saved tank data to .mat files")
 fprintf("Files saved: %d\n",totFiles)
 fprintf("Save location: %s\n",savDir)

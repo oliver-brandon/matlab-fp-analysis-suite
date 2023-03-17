@@ -31,7 +31,7 @@ epoc = {'aRL/','bRL/'};
 savetype = ".jpg";
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more tanks"); 
-fprintf("SA_Epoc_PlotSaver Version: %d\n",VERSION)
+fprintf("SA_Epoc_PlotSaver Version: %s\n",VERSION)
 tic
 if myDir == 0
     disp("Select a folder containing one or more tanks")
@@ -300,6 +300,6 @@ if length(myFiles) > 1
 elseif length(myFiles) == 1
     fprintf("Finished plotting and saving %d figure...\n",length(myFiles))
 end
-close all
+
 NERD_STATS(toc,length(myFiles));
 
