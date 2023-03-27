@@ -28,7 +28,7 @@ VERSION = "1.0";
 figure_savepath = '/Volumes/CUDADRIVE/Sucrose_SA/Epoc_Figs/';
 epoc = {'aRL/','bRL/'};
 % epoc = {'IL1/','IL2/'};
-savetype = ".jpg";
+savetype = ".pdf";
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more tanks"); 
 fprintf("SA_Epoc_PlotSaver Version: %s\n",VERSION)

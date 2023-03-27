@@ -2,11 +2,11 @@ clear all; close all;
 warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-timeWindow = 10; % the number of seconds after the onset of a TTL to analyze
+timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseline = 2; % baseline signal to include before TTL 
 baselineZ = [9 1];
 N = 100; %Downsample N times
-minArrayLen = 123; %timeWindow = 5 - 72, timeWindow = 10 - 123
+minArrayLen = 72; %timeWindow = 5 - 72, timeWindow = 10 - 123
 %array column length definition to eliminate error produced
 %when trying to fill array with stream snips of different lengths 
 %(negative relationship with N (downsample)

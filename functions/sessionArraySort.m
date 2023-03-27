@@ -22,6 +22,13 @@ function [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cueTS,A1
     cue_lever_ts(:,1) = cueTS;
    
     session_ts(2,:) = [];
+    
+    if size(cue_lever_ts,1) > size(session_ts,1)
+        cue_lever_ts = cue_lever_ts(1:size(session_ts,1), :);
+    else
+        cue_lever_ts(end+1:size(session_ts,1), :) = 0;
+    end
+
     cue_lever_ts(:,2) = session_ts;
     lever_ts = cue_lever_ts(:,2) - cue_lever_ts(:,1);
     % Initialize the new cell array with the same size as the original column
