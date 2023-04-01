@@ -6,8 +6,8 @@ timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseline = 2; % baseline signal to include before TTL 
 baselineZ_cue = [5 1];
 baselineZ_lever = [3 1];
-N = 100; %Downsample N times
-minArrayLen = 72; 
+N = 1; %Downsample N times
+minArrayLen = 7121; 
 %array column length definition to eliminate error produced
 %when trying to fill array with stream snips of different lengths 
 %(negative relationship with N (downsample)
@@ -36,6 +36,9 @@ master_iNoRew_STREAM = zeros(numFiles,minArrayLen);
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
+    [~,treatment,~] = fileparts(myDir);
+    brokenID = strsplit(name,'_');
+    prl_phase = char(brokenID(2));
     load(filename)
     cueSTREAM = [];
     cRewSTREAM = [];
@@ -70,7 +73,7 @@ for i = 1:numFiles
         dFF = 100*(Y_dF_all)./Y_fit_all;
         std_dFF = std(double(dFF));
         detrend_465 = detrend(dFF);
-        z465 = zscore(data.streams.(GRABDA).data);
+        z465 = zscore(detrend_465);
         cueTSA = data.epocs.St1_.onset;
         correct_rewardedA = data.epocs.cRewA.onset;
         correct_norewardA = data.epocs.cNoRewA.onset;
@@ -281,7 +284,7 @@ for i = 1:numFiles
         dFF = 100*(Y_dF_all)./Y_fit_all;
         std_dFF = std(double(dFF));
         detrend_465 = detrend(dFF);
-        z465 = zscore(data.streams.(GRABDA).data);
+        z465 = zscore(detrend_465);
         cueTSC = data.epocs.St2_.onset;
         correct_rewardedC = data.epocs.cRewC.onset;
         correct_norewardC = data.epocs.cNoRewC.onset;
@@ -492,6 +495,17 @@ master_cNoRew_STREAM = master_cNoRew_STREAM;
 master_iRew_STREAM = master_iRew_STREAM;
 master_iNoRew_STREAM = master_iNoRew_STREAM;
 
+prl_ERT = signalSaver...
+    ( ...
+    master_cue_STREAM, ...
+    master_cRew_STREAM, ...
+    master_cNoRew_STREAM, ...
+    master_iRew_STREAM, ...
+    master_iNoRew_STREAM, ...
+    prl_phase, ...
+    treatment ...
+    );
+save('prl_ERT.mat','-struct','prl_ERT',prl_phase,treatment)
 toc
 delete(LOAD_BAR)
 disp("Successfully analyzed .mat files")
