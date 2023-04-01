@@ -9,6 +9,14 @@
 % depending on which box the animal was recorded in. Currently, this script
 % only accepts TDT tanks.
 %
+% IMPORTANT:
+% This script uses functions outside of this script that are included in
+% the 'functions' directory contained within the entire repositiory. Thus, 
+% it is recommended to download the entire repository this script is apart 
+% of by visiting https://github.com/oliver-brandon/matlab-fp-analysis-suite. 
+% Once downloaded, add the entire matlab-fp-analysis-suite folder to your 
+% MATLAB path. 
+%
 % INSTRUCTIONS:
 % To begin, click 'Run' and select a folder containing one or more TDT
 % tanks. Make sure you set your figure save path. It is recommended to

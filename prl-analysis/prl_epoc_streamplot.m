@@ -1,3 +1,24 @@
+% prl_epoc_streamplot created by Brandon L. Oliver, M.A.
+% (boliv018@ucr.edu)
+%
+% ABOUT:
+% This script will plot single fiber PRL epoc averaged signal data and save
+% to a user designated directory 'figure_savepath'. To use this, files must
+% converted and separated into .mat files using the scripts in 'tank2mat'
+% (see README in tank2mat).
+%
+% IMPORTANT:
+% This script uses functions outside of this script that are included in
+% the 'functions' directory contained within the entire repositiory. Thus, 
+% it is recommended to download the entire repository this script is apart 
+% of by visiting https://github.com/oliver-brandon/matlab-fp-analysis-suite. 
+% Once downloaded, add the entire matlab-fp-analysis-suite folder to your 
+% MATLAB path. 
+%
+% INSTRUCTIONS:
+% To begin, click 'Run' and select a folder containing one or more .mat
+% files. Make sure you set your figure save path. It is recommended to
+% create a specific folder on your computer for the figures to output to.
 clear all; close all;
 warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%

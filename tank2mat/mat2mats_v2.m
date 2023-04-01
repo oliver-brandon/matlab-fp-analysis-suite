@@ -17,6 +17,7 @@
 % ID1_Task1_Treatment1_ID2_Task2_Treatment2 or
 % ID1_Task1_Treatment1_Empty_NA_NA if there is only one animal in the file.
 % Fill task/treatment fields with "NA"
+% For more instructions, check out the README.
 clear
 VERSION = "2.0";
 fprintf("VERSION: %s\n",VERSION)

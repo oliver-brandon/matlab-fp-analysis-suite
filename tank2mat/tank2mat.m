@@ -11,7 +11,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                                                                                      
 % Created by Brandon L. Oliver, M.A.
 % Turns TDT tanks into .mat files freeing up storage space and speeding up
-% analyses significantly
+% analyses significantly. For instructions, check out the README.
 
 myDir = uigetdir('','Choose the tank(s) you want to save.'); %gets directory%
 if myDir == 0
