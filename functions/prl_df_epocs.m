@@ -9,7 +9,7 @@ if TTLs == 1
     else
         correct_ts_A = data.epocs.CL1_.onset;
     end
-    
+
     if isfield(data.epocs, 'IL1_') == 0
         incorrect_ts_A = 0;
     else
@@ -47,7 +47,7 @@ if TTLs == 1
     incorrect_norewardA = nonzeros(incorrect_norewardA(:,1));
     
     if isempty(correct_rewardedA) == 1
-    correct_rewardedA = 0;
+        correct_rewardedA = 0;
     end
     if isempty(correct_norewardA) == 1
         correct_norewardA = 0;

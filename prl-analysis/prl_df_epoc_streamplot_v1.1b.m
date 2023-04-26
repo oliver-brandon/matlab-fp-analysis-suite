@@ -29,17 +29,17 @@ warning off
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseline = 2; % baseline signal to include before TTL 
 baselineZ_cue = [5 1];
-baselineZ_lever = [3 1];
+baselineZ_lever = [5 1];
 N = 100; %Downsample N times
 minArrayLen = 72; %timeWindow = 5 - 72, timeWindow = 10 - 123
 %array column length definition to eliminate error produced
 %when trying to fill array with stream snips of different lengths 
 %(negative relationship with N (downsample)
-figure_savepath = 'Z:\PRL_DF_EpocPlots\';% must include backslash at end of path
+figure_savepath = '/Volumes/CUDADRIVE/DA_PRL/PRL_DF_EpocPlots/test/';% must include backslash at end of path
 savetype = '.pdf'; % can set to desired file type
 stream_A = 'DLS';
 stream_C = 'NAc';
-VERSION = 'v1.0';
+VERSION = 'v1.1b';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more files"); 
@@ -87,7 +87,11 @@ for batch = 1:numFiles
 
     for k = 1:2
         if k == 1
-
+            % cueTS = [];
+            % correct_rewarded = [];
+            % correct_noreward = [];
+            % incorrect_rewarded = [];
+            % incorrect_noreward = [];
             ISOS = 'x405A';
             GRABDA = 'x465A';
             %time array used for all streams%
@@ -268,25 +272,38 @@ for batch = 1:numFiles
                 epoc_streamA{end+1} = double(cueSTREAM);
                 epoc_nameA{end+1} = char('Cue');
             end
-            if exist('cRewSTREAM','var')
+            if correct_rewarded > 0
                 epoc_streamA{end+1} = double(cRewSTREAM);
                 epoc_nameA{end+1} = char('C+');
+            else
+                continue
             end
-            if exist('cNoRewSTREAM','var')
+            if correct_noreward > 0
                 epoc_streamA{end+1} = double(cNoRewSTREAM);
                 epoc_nameA{end+1} = char('C-');
+            else
+                continue
             end
-            if exist('iRewSTREAM','var')
+            if incorrect_rewarded > 0
                 epoc_streamA{end+1} = double(iRewSTREAM);
                 epoc_nameA{end+1} = char('I+');
+            else
+                continue
             end
-            if exist('iNoRewSTREAM','var')
+            if incorrect_noreward > 0
                 epoc_streamA{end+1} = double(iNoRewSTREAM);
                 epoc_nameA{end+1} = char('I-');
+            else
+                continue
             end
             
     
         elseif k == 2
+            % cueTS = [];
+            % correct_rewarded = [];
+            % correct_noreward = [];
+            % incorrect_rewarded = [];
+            % incorrect_noreward = [];
             ISOS = 'x405C';
             GRABDA = 'x465C';
             %time array used for all streams%
@@ -465,21 +482,29 @@ for batch = 1:numFiles
                 epoc_streamC{end+1} = double(cueSTREAM);
                 epoc_nameC{end+1} = char('Cue');
             end
-            if exist('cRewSTREAM','var')
+            if correct_rewarded > 0
                 epoc_streamC{end+1} = double(cRewSTREAM);
                 epoc_nameC{end+1} = char('C+');
+            else
+                continue
             end
-            if exist('cNoRewSTREAM','var')
+            if correct_noreward > 0
                 epoc_streamC{end+1} = double(cNoRewSTREAM);
                 epoc_nameC{end+1} = char('C-');
+            else
+                continue
             end
-            if exist('iRewSTREAM','var')
+            if incorrect_rewarded > 0
                 epoc_streamC{end+1} = double(iRewSTREAM);
                 epoc_nameC{end+1} = char('I+');
+            else
+                continue
             end
-            if exist('iNoRewSTREAM','var')
+            if incorrect_noreward > 0
                 epoc_streamC{end+1} = double(iNoRewSTREAM);
                 epoc_nameC{end+1} = char('I-');
+            else
+                continue
             end
         end
     end
@@ -531,13 +556,15 @@ for batch = 1:numFiles
         % Legend
         title(TITLE{i},'FontSize',18);
         legend('Location', 'best');
-        savepath = strcat(figure_savepath,animalID,"\");
+        savepath = strcat(figure_savepath,animalID,"/");
         file_name = strcat(savepath,TITLE{i},savetype);
         if not(isfolder(savepath))
             mkdir(savepath);
         end
         saveas(fig{i},file_name)
+        
     end
+     
 end
 toc
 NERD_STATS(toc,numFiles);
