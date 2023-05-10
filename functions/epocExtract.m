@@ -8,8 +8,7 @@ function [epocSTREAM,epocAMP,epocAUC] = epocExtract( ...
     ampWindow, ...
     minArrayLen ...
     )
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+
     epocSTREAM = [];
     epocAMP = [];
     epocAUC = [];

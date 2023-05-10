@@ -4,16 +4,17 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseline = 2; % baseline signal to include before TTL 
-baselineZ_cue = [5 1];
+baselineZ_cue = [3 1];
+amp_window = [-1 2];
 baselineZ_lever = [3 1];
-N = 1; %Downsample N times
-minArrayLen = 7121; 
+N = 10; %Downsample N times
+minArrayLen = 713; 
 %array column length definition to eliminate error produced
 %when trying to fill array with stream snips of different lengths 
-%(negative relationship with N (downsample)
+%(negative relationship with N (downsample) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('Z:\DA_PRL\PRL_Mats_Split\Good_Sig','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('/Users/brandon/DA_PRL','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -23,16 +24,13 @@ myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name},'.mat'));
 numFiles = length(myFiles);
-% LOAD_BAR = waitbar(0,'1','Name','Analyzing...',...
-%     'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
-% setappdata(LOAD_BAR,'canceling',0)
-AUC_analysis = cell(numFiles,5);
-AMP_analysis = cell(numFiles,5);
-master_cue_STREAM = zeros(numFiles,minArrayLen);
-master_cRew_STREAM = zeros(numFiles,minArrayLen);
-master_cNoRew_STREAM = zeros(numFiles,minArrayLen);
-master_iRew_STREAM = zeros(numFiles,minArrayLen);
-master_iNoRew_STREAM = zeros(numFiles,minArrayLen);
+AUCz_analysis = cell(numFiles,5);
+AMPz_analysis = cell(numFiles,5);
+master_cue_STREAMz = zeros(numFiles,minArrayLen);
+master_cRew_STREAMz = zeros(numFiles,minArrayLen);
+master_cNoRew_STREAMz = zeros(numFiles,minArrayLen);
+master_iRew_STREAMz = zeros(numFiles,minArrayLen);
+master_iNoRew_STREAMz = zeros(numFiles,minArrayLen);
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
@@ -40,475 +38,292 @@ for i = 1:numFiles
     brokenID = strsplit(name,'_');
     prl_phase = char(brokenID(2));
     load(filename)
-    sessionSTREAM = [];
-    cueSTREAM = [];
-    cRewSTREAM = [];
-    cNoRewSTREAM = [];
-    iRewSTREAM = [];
-    iNoRewSTREAM = [];
+    sessionSTREAMdff = [];
+    cueSTREAMdff = [];
+    cRewSTREAMdff = [];
+    cNoRewSTREAMdff = [];
+    iRewSTREAMdff = [];
+    iNoRewSTREAMdff = [];
+    sessionSTREAMz = [];
+    cueSTREAMz = [];
+    cRewSTREAMz = [];
+    cNoRewSTREAMz = [];
+    iRewSTREAMz = [];
+    iNoRewSTREAMz = [];
     if isfield(data.streams, 'x405A')
         ISOS = 'x405A';
-        GRABDA = 'x465A';
-        %time array used for all streams%
-        time1 = (1:length(data.streams.(GRABDA).data))/data.streams.(GRABDA).fs;
-        %removes the first (t) seconds where the data is wild due to turning on LEDs%
-        t = 0; % time threshold below which we will discard
-        ind = find(time1>t,1);% find first index of when time crosses threshold
-        time1 = time1(ind:end); % reformat vector to only include allowed time
-        data.streams.(GRABDA).data = data.streams.(GRABDA).data(ind:end);
-        data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
-        
-        %downsample streams and time array by N times%
-        data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
-        data.streams.(GRABDA).data = downsample(data.streams.(GRABDA).data, N);
-        minLength = min(length(data.streams.(ISOS).data),length(data.streams.(GRABDA).data));
-        data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
-        data.streams.(GRABDA).data = data.streams.(GRABDA).data(1:minLength);
-        time1 = downsample(time1, N);
-        ts1 = -baseline + (1:minArrayLen) / data.streams.(GRABDA).fs*N;
-        
-        %detrend & dFF%
-        bls = polyfit(data.streams.(ISOS).data,data.streams.(GRABDA).data,1);
-        Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
-        Y_dF_all = data.streams.(GRABDA).data - Y_fit_all; %dF (units mV) is not dFF
-        dFF = 100*(Y_dF_all)./Y_fit_all;
-        std_dFF = std(double(dFF));
-        detrend_465 = detrend(dFF);
-        z465 = zscore(detrend_465);
-        cueTSA = data.epocs.St1_.onset;
-        correct_rewardedA = data.epocs.cRewA.onset;
-        correct_norewardA = data.epocs.cNoRewA.onset;
-        incorrect_rewardedA = data.epocs.iRewA.onset;
-        incorrect_norewardA = data.epocs.iNoRewA.onset;
-
-        [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cueTSA,correct_rewardedA,...
-            correct_norewardA,incorrect_rewardedA,incorrect_norewardA);
-
-        for e = 1:height(session_ts)
-            e1 = session_ts(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            e3 = session_ts(e,1)-baselineZ_cue(:,2);
-            e4 = session_ts(e,1)-baselineZ_cue(:,1);
-            [~,ind1] = min(abs(time1-e1));
-            [~,ind2] = min(abs(time1-e2));
-            [~,ind3] = min(abs(time1-e3));
-            [~,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            sessionSTREAM(e,:) = zfinal(1:minArrayLen);
-            sessionAMP(e,:) = max(zfinal);
-            sessionAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-        for e = 1:height(cueTSA)
-            e1 = data.epocs.St1_.onset(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            e3 = data.epocs.St1_.onset(e,1)-baselineZ_cue(:,2);
-            e4 = data.epocs.St1_.onset(e,1)-baselineZ_cue(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cueSTREAM(e,:) = zfinal(1:minArrayLen);
-            cueAMP(e,:) = max(zfinal(1, 21:41));
-            cueAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-
-        for e = 1:height(correct_rewardedA)
-            e1 = correct_rewardedA(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = correct_rewardedA(e,1)-baselineZ_lever(:,2);
-            e4 = correct_rewardedA(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if correct_rewardedA == 0
-                cRewSTREAM(1:minArrayLen,1) = zeros;
-                cRewAMP = zeros(1);
-                cRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            cRewAMP(e,:) = max(zfinal(1, 21:41));
-            cRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-
-        for e = 1:height(correct_norewardA)
-            e1 = correct_norewardA(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = correct_norewardA(e,1)-baselineZ_lever(:,2);
-            e4 = correct_norewardA(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if correct_norewardA == 0
-                cNoRewSTREAM(1:minArrayLen,1) = zeros;
-                cNoRewAMP = zeros(1);
-                cNoRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cNoRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            cNoRewAMP(e,:) = max(zfinal(1, 41:51));
-            cNoRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-
-        for e = 1:height(incorrect_rewardedA)
-            e1 = incorrect_rewardedA(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = incorrect_rewardedA(e,1)-baselineZ_lever(:,2);
-            e4 = incorrect_rewardedA(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if incorrect_rewardedA == 0
-                iRewSTREAM(1:minArrayLen,1) = zeros;
-                iRewAMP = zeros(1);
-                iRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            iRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            iRewAMP(e,:) = max(zfinal(1, 21:41));
-            iRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-
-        for e = 1:height(incorrect_norewardA)
-            e1 = incorrect_norewardA(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = incorrect_norewardA(e,1)-baselineZ_lever(:,2);
-            e4 = incorrect_norewardA(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if incorrect_norewardA == 0
-                iNoRewSTREAM(1:minArrayLen,1) = zeros;
-                iNoRewAMP = zeros(1);
-                iNoRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            iNoRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            iNoRewAMP(e,:) = max(zfinal(1, 41:51));
-            iNoRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-
-    else
+        SIGNAL = 'x465A';
+        cue = data.epocs.St1_.onset;
+        cRew = data.epocs.cRewA.onset;
+        cNoRew = data.epocs.cNoRewA.onset;
+        iRew = data.epocs.iRewA.onset;
+        iNoRew = data.epocs.iNoRewA.onset;
+        [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cue,cRew,...
+            cNoRew,iRew,iNoRew);
+    elseif isfield(data.streams, 'x405C')
         ISOS = 'x405C';
-        GRABDA = 'x465C';
-        %time array used for all streams%
-        time1 = (1:length(data.streams.(GRABDA).data))/data.streams.(GRABDA).fs;
-        %removes the first (t) seconds where the data is wild due to turning on LEDs%
-        t = 0; % time threshold below which we will discard
-        ind = find(time1>t,1);% find first index of when time crosses threshold
-        time1 = time1(ind:end); % reformat vector to only include allowed time
-        data.streams.(GRABDA).data = data.streams.(GRABDA).data(ind:end);
-        data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
-        minLength = min(length(data.streams.(ISOS).data),length(data.streams.(GRABDA).data));
-        data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
-        data.streams.(GRABDA).data = data.streams.(GRABDA).data(1:minLength);
-        
-        %downsample streams and time array by N times%
-        data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
-        data.streams.(GRABDA).data = downsample(data.streams.(GRABDA).data, N);
-        time1 = downsample(time1, N);
-        ts1 = -baseline + (1:minArrayLen) / data.streams.(GRABDA).fs*N;
-        
-        %detrend & dFF%
-        bls = polyfit(data.streams.(ISOS).data,data.streams.(GRABDA).data,1);
-        Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
-        Y_dF_all = data.streams.(GRABDA).data - Y_fit_all; %dF (units mV) is not dFF
-        dFF = 100*(Y_dF_all)./Y_fit_all;
-        std_dFF = std(double(dFF));
-        detrend_465 = detrend(dFF);
-        z465 = zscore(detrend_465);
-        cueTSC = data.epocs.St2_.onset;
-        correct_rewardedC = data.epocs.cRewC.onset;
-        correct_norewardC = data.epocs.cNoRewC.onset;
-        incorrect_rewardedC = data.epocs.iRewC.onset;
-        incorrect_norewardC = data.epocs.iNoRewC.onset;
+        SIGNAL = 'x465C';
+        cue = data.epocs.St2_.onset;
+        cRew = data.epocs.cRewC.onset;
+        cNoRew = data.epocs.cNoRewC.onset;
+        iRew = data.epocs.iRewC.onset;
+        iNoRew = data.epocs.iNoRewC.onset;
+        [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cue,cRew,...
+            cNoRew,iRew,iNoRew);
+    end
+    %time array used for all streams%
+    session_time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
+    %removes the first (t) seconds where the data is wild due to turning on LEDs%
+    t = 0; % time threshold below which we will discard
+    ind = find(session_time>t,1);% find first index of when time crosses threshold
+    session_time = session_time(ind:end); % reformat vector to only include allowed time
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(ind:end);
+    data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
+   
+    %downsample streams and time array by N times%
+    data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
+    data.streams.(SIGNAL).data = downsample(data.streams.(SIGNAL).data, N);
+    minLength = min(length(data.streams.(ISOS).data),length(data.streams.(SIGNAL).data));
+    data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(1:minLength);
 
-        [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cueTSC,correct_rewardedC,...
-            correct_norewardC,incorrect_rewardedC,incorrect_norewardC);
+    ISOS_raw = data.streams.(ISOS).data;
+    SIGNAL_raw = data.streams.(SIGNAL).data;
 
-        for e = 1:height(session_ts)
-            e1 = session_ts(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            e3 = session_ts(e,1)-baselineZ_cue(:,2);
-            e4 = session_ts(e,1)-baselineZ_cue(:,1);
-            [~,ind1] = min(abs(time1-e1));
-            [~,ind2] = min(abs(time1-e2));
-            [~,ind3] = min(abs(time1-e3));
-            [~,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            sessionSTREAM(e,:) = zfinal(1:minArrayLen);
-            sessionAMP(e,:) = max(zfinal);
-            sessionAUC(e,:) = trapz(GRABDA_time,zfinal);
+    session_time = downsample(session_time, N);
+    ts1 = -baseline + (1:minArrayLen) / data.streams.(SIGNAL).fs*N;
+    
+    %detrend & dFF%
+    bls = polyfit(data.streams.(ISOS).data,data.streams.(SIGNAL).data,1);
+    Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
+    Y_dF_all = data.streams.(SIGNAL).data - Y_fit_all; %dF (units mV) is not dFF
+    dFF = 100*(Y_dF_all)./Y_fit_all;
+    std_dFF = std(double(dFF));
+    detrend_465 = detrend(dFF);
+    z465 = zscore(detrend_465);
+
+
+
+    for e = 1:height(session_ts)
+        e1 = session_ts(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        e3 = session_ts(e,1)-baselineZ_cue(:,2);
+        e4 = session_ts(e,1)-baselineZ_cue(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
         end
-        for e = 1:height(cueTSC)
-            e1 = data.epocs.St2_.onset(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            e3 = data.epocs.St2_.onset(e,1)-baselineZ_cue(:,2);
-            e4 = data.epocs.St2_.onset(e,1)-baselineZ_cue(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cueSTREAM(e,:) = zfinal(1:minArrayLen);
-            cueAMP(e,:) = max(zfinal(1, 21:41));
-            cueAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-        
-        for e = 1:height(correct_rewardedC)
-            e1 = correct_rewardedC(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = correct_rewardedC(e,1)-baselineZ_lever(:,2);
-            e4 = correct_rewardedC(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if correct_rewardedC == 0
-                cRewSTREAM(1:minArrayLen,1) = zeros;
-                cRewAMP = zeros(1);
-                cRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            cRewAMP(e,:) = max(zfinal(1, 21:41));
-            cRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-        
-        for e = 1:height(correct_norewardC)
-            e1 = correct_norewardC(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = correct_norewardC(e,1)-baselineZ_lever(:,2);
-            e4 = correct_norewardC(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if correct_norewardC == 0
-                cNoRewSTREAM(1:minArrayLen,1) = zeros;
-                cNoRewAMP = zeros(1);
-                cNoRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            cNoRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            cNoRewAMP(e,:) = max(zfinal(1, 41:51));
-            cNoRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-        for e = 1:height(incorrect_rewardedC)
-            e1 = incorrect_rewardedC(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = incorrect_rewardedC(e,1)-baselineZ_lever(:,2);
-            e4 = incorrect_rewardedC(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if incorrect_rewardedC == 0
-                iRewSTREAM(1:minArrayLen,1) = zeros;
-                iRewAMP = zeros(1);
-                iRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            iRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            iRewAMP(e,:) = max(zfinal(1, 21:41));
-            iRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
-        
-        for e = 1:height(incorrect_norewardC)
-            e1 = incorrect_norewardC(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            if e1 == 0
-                continue
-            end
-            e3 = incorrect_norewardC(e,1)-baselineZ_lever(:,2);
-            e4 = incorrect_norewardC(e,1)-baselineZ_lever(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if incorrect_norewardC == 0
-                iNoRewSTREAM(1:minArrayLen,1) = zeros;
-                iNoRewAMP = zeros(1);
-                iNoRewAUC = zeros(1);
-                break
-            end
-            if length(zfinal) < minArrayLen
-                continue
-            end
-            iNoRewSTREAM(e,:) = zfinal(1:minArrayLen);
-            iNoRewAMP(e,:) = max(zfinal(1, 41:51));
-            iNoRewAUC(e,:) = trapz(GRABDA_time,zfinal);
-        end
+        sessionSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        sessionAMPdff(e,:) = max(GRABDA_dffSignal);
+        sessionSTREAMz(e,:) = zfinal(1:minArrayLen);
+        sessionAMPz(e,:) = max(zfinal);
         
     end
-    master_cue_STREAM(i,:) = mean(cueSTREAM,1);
-    master_cRew_STREAM(i,:) = mean(cRewSTREAM,1);
-    master_cNoRew_STREAM(i,:) = mean(cNoRewSTREAM,1);
-    master_iRew_STREAM(i,:) = mean(iRewSTREAM,1);
-    master_iNoRew_STREAM(i,:) = mean(iNoRewSTREAM,1);
-    cueAMP(cueAMP == 0) = nan;
-    cRewAMP(cRewAMP == 0) = nan;
-    cNoRewAMP(cNoRewAMP == 0) = nan;
-    iRewAMP(iRewAMP == 0) = nan;
-    iNoRewAMP(iNoRewAMP == 0) = nan;
-    AUC_analysis(i,1:5) = {mean(cueAUC,1) mean(cRewAUC,1) mean(cNoRewAUC,1) mean(iRewAUC,1) mean(iNoRewAUC,1)};
+    for e = 1:height(cue)
+        e1 = data.epocs.St1_.onset(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        e3 = data.epocs.St1_.onset(e,1)-baselineZ_cue(:,2);
+        e4 = data.epocs.St1_.onset(e,1)-baselineZ_cue(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        ind5 = find(ts1>amp_window(1),1);
+        ind6 = find(ts1>amp_window(2),1);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
+        end
+        cueSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        cueAMPdff(e,:) = max(GRABDA_dffSignal(1, ind5:ind6));
+        cueSTREAMz(e,:) = zfinal(1:minArrayLen);
+        cueAMPz(e,:) = max(zfinal(1, ind5:ind6));
+        
+    end
 
-    AMP_analysis(i,1:5) = {mean(cueAMP,1) mean(cRewAMP,1) mean(cNoRewAMP,1) mean(iRewAMP,1) mean(iNoRewAMP,1)};
+    for e = 1:height(cRew)
+        e1 = cRew(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        if cRew == 0
+            cRewSTREAMdff(e,1:minArrayLen) = zeros;
+            cRewAMPdff = zeros(1);
+            cRewSTREAMz(e,1:minArrayLen) = zeros;
+            cRewAMPz = zeros(1);
+            break
+        end
+        e3 = cRew(e,1)-baselineZ_lever(:,2);
+        e4 = cRew(e,1)-baselineZ_lever(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        ind5 = find(ts1>amp_window(1),1);
+        ind6 = find(ts1>amp_window(2),1);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
+        end
+        cRewSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        cRewAMPdff(e,:) = max(GRABDA_dffSignal(1, ind5:ind6));
+        cRewSTREAMz(e,:) = zfinal(1:minArrayLen);
+        cRewAMPz(e,:) = max(zfinal(1, ind5:ind6));
+        
+    end
+
+    for e = 1:height(cNoRew)
+        e1 = cNoRew(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        if cNoRew == 0
+            cNoRewSTREAMdff(e,1:minArrayLen) = zeros;
+            cNoRewAMPdff = zeros(1);
+            cNoRewSTREAMz(e,1:minArrayLen) = zeros;
+            cNoRewAMPz = zeros(1);
+            break
+        end
+        e3 = cNoRew(e,1)-baselineZ_lever(:,2);
+        e4 = cNoRew(e,1)-baselineZ_lever(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        ind5 = find(ts1>amp_window(1),1);
+        ind6 = find(ts1>amp_window(2),1);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
+        end
+        cNoRewSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        cNoRewAMPdff(e,:) = max(GRABDA_dffSignal(1, ind5:ind6));
+        cNoRewSTREAMz(e,:) = zfinal(1:minArrayLen);
+        cNoRewAMPz(e,:) = max(zfinal(1, ind5:ind6));
+    end
+
+    for e = 1:height(iRew)
+        e1 = iRew(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        if iRew == 0
+            iRewSTREAMdff(e,1:minArrayLen) = zeros;
+            iRewAMPdff = zeros(1);
+            iRewSTREAMz(e,1:minArrayLen) = zeros;
+            iRewAMPz = zeros(1);
+            break
+        end
+        e3 = iRew(e,1)-baselineZ_lever(:,2);
+        e4 = iRew(e,1)-baselineZ_lever(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        ind5 = find(ts1>amp_window(1),1);
+        ind6 = find(ts1>amp_window(2),1);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
+        end
+        iRewSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        iRewAMPdff(e,:) = max(GRABDA_dffSignal(1, ind5:ind6));
+        iRewSTREAMz(e,:) = zfinal(1:minArrayLen);
+        iRewAMPz(e,:) = max(zfinal(1, ind5:ind6));
+    end
+
+    for e = 1:height(iNoRew)
+        e1 = iNoRew(e,1)-baseline;
+        e2 = e1+timeWindow+baseline;
+        if iNoRew == 0
+            iNoRewSTREAMdff(e,1:minArrayLen) = zeros;
+            iNoRewAMPdff = zeros(1);
+            iNoRewSTREAMz(e,1:minArrayLen) = zeros;
+            iNoRewAMPz = zeros(1);
+            break
+        end
+        e3 = iNoRew(e,1)-baselineZ_lever(:,2);
+        e4 = iNoRew(e,1)-baselineZ_lever(:,1);
+        [~,ind1] = min(abs(session_time-e1));
+        [~,ind2] = min(abs(session_time-e2));
+        [~,ind3] = min(abs(session_time-e3));
+        [~,ind4] = min(abs(session_time-e4));
+        GRABDA_dffBase = mean(detrend_465(1,ind4:ind3));
+        GRABDA_dffSignal = detrend_465(1,ind1:ind2) - GRABDA_dffBase;
+        GRABDA_zBase = z465(1,ind4:ind3);
+        GRABDA_zSignal = z465(1,ind1:ind2);
+        GRABDA_time = session_time(1,ind1:ind2);
+        ind5 = find(ts1>amp_window(1),1);
+        ind6 = find(ts1>amp_window(2),1);
+        zb = mean(GRABDA_zBase);
+        zsd = std(GRABDA_zBase);
+        zfinal = (GRABDA_zSignal - zb)/zsd;
+        if length(zfinal) < minArrayLen || length(GRABDA_dffSignal) < minArrayLen
+            continue
+        end
+        iNoRewSTREAMdff(e,:) = GRABDA_dffSignal(1:minArrayLen);
+        iNoRewAMPdff(e,:) = max(GRABDA_dffSignal(1, ind5:ind6));
+        iNoRewSTREAMz(e,:) = zfinal(1:minArrayLen);
+        iNoRewAMPz(e,:) = max(zfinal(1, ind5:ind6));
+    end
 
     
-    waitbar(i/numFiles,LOAD_BAR,sprintf('Progress: %d %%',floor(i/numFiles*100)));
-    pause(0.1)        
-end
-AUC_analysis(cellfun(@(x) x==0,AUC_analysis)) = {NaN};
-AMP_analysis(cellfun(@(x) x==0,AMP_analysis)) = {NaN};
-AUC_analysis_table = cell2table(AUC_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-AMP_analysis_table = cell2table(AMP_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-% master_cue_STREAM = master_cue_STREAM;
-% master_cRew_STREAM = master_cRew_STREAM;
-% master_cNoRew_STREAM = master_cNoRew_STREAM;
-% master_iRew_STREAM = master_iRew_STREAM;
-% master_iNoRew_STREAM = master_iNoRew_STREAM;
 
-% prl_ERT = signalSaver...
-%     ( ...
-%     master_cue_STREAM, ...
-%     master_cRew_STREAM, ...
-%     master_cNoRew_STREAM, ...
-%     master_iRew_STREAM, ...
-%     master_iNoRew_STREAM, ...
-%     prl_phase, ...
-%     treatment ...
-%     );
-% save('prl_ERT.mat','-struct','prl_ERT',prl_phase,treatment)
+    master_cue_STREAMz(i,:) = mean(cueSTREAMz,1);
+    master_cRew_STREAMz(i,:) = mean(cRewSTREAMz,1);
+    master_cNoRew_STREAMz(i,:) = mean(cNoRewSTREAMz,1);
+    master_iRew_STREAMz(i,:) = mean(iRewSTREAMz,1);
+    master_iNoRew_STREAMz(i,:) = mean(iNoRewSTREAMz,1);
+    cueAMPz(cueAMPz == 0) = nan;
+    cRewAMPz(cRewAMPz == 0) = nan;
+    cNoRewAMPz(cNoRewAMPz == 0) = nan;
+    iRewAMPz(iRewAMPz == 0) = nan;
+    iNoRewAMPz(iNoRewAMPz == 0) = nan;
+    AMPz_analysis(i,1:5) = {mean(cueAMPz,1) mean(cRewAMPz,1) mean(cNoRewAMPz,1) mean(iRewAMPz,1) mean(iNoRewAMPz,1)};
+
+    
+        
+end
+AMPdff_analysis(cellfun(@(x) x==0,AMPdff_analysis)) = {NaN};
+AMPdff_analysis_table = cell2table(AMPdff_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
+AMPz_analysis(cellfun(@(x) x==0,AMPz_analysis)) = {NaN};
+AMPz_analysis_table = cell2table(AMPz_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
+
 toc
-% delete(LOAD_BAR)
+
 disp("Successfully analyzed .mat files")
 fprintf("Files analyzed: %d\n", numFiles)
 

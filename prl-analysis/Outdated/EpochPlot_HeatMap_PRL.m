@@ -27,20 +27,21 @@
 clear all; clc; close all;
 
 
-[file,path] = uigetfile;
-[~,filename,~] = fileparts(file);
-matfile = fullfile(path,file);
+% [file,path] = uigetfile;
+% [~,filename,~] = fileparts(file);
+% matfile = fullfile(path,file);
+% 
+% load(matfile);
 
-load(matfile);
 
-
-% BLOCKPATH = '/Users/brandon/Desktop/DA_PRL/Tanks/DA67_Rev1_JZL_DA69_Rev1_JZL';
-% data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
+BLOCKPATH = 'Z:\PRL_DF_Tanks\Empty_NA_NA_76MUL_Acq1_NA';
+[~,name,~] = fileparts(BLOCKPATH);
+data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 box_number = 3; %3 = 465A, 4 = 465C
 epoch_number = 3;%1 = cRew, 2 = iNoRew, 3 = cue
 training_logic = 2; %1 = training, 2 = Acq/Rev
 
-TITLE1 = filename;
+TITLE1 = name;
 if box_number == 3
     STREAM_STORE1 = 'x405A'; % name of the 405 store
     STREAM_STORE2 = 'x465A'; % name of the 465 store

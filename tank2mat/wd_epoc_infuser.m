@@ -21,6 +21,11 @@ if myDir == 0
     disp("Select a directory of mat files to start")
     return
 end
+tsDir = uigetdir('','Choose where the timetsamp files are located.'); %gets directory%
+if tsDir == 0
+    disp("Select a valid directory")
+    return
+end
 savDir = uigetdir('','Choose where you want to save the infused mat file(s).'); %gets directory%
 if savDir == 0
     disp("Select a valid save directory")
@@ -35,12 +40,12 @@ numFiles = length(myFiles);
 for i = 1:numFiles
 
     FILEPATH = fullfile(myDir,myFiles(i).name);
+    [~,filename,~] = fileparts(FILEPATH);
     load(FILEPATH);
-    data = prl_epocs(data);
+    data = wd_epocs(filename,tsDir,data);
     save(FILEPATH,"data")
-    
+   
 end
-
 disp("Successfully infused epocs into mat files")
 fprintf("Files infused: %d\n",numFiles)
 fprintf("Save location: %s\n",savDir)

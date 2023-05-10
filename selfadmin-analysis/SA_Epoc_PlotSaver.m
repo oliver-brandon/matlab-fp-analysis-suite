@@ -25,7 +25,7 @@ VERSION = "1.0";
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% edit these variables %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure_savepath = '/Volumes/CUDADRIVE/Sucrose_SA/Epoc_Figs/';
+figure_savepath = '/Users/brandon/_Lab/signalTest_tanks/GCaMP/figs/';
 epoc = {'aRL/','bRL/'};
 % epoc = {'IL1/','IL2/'};
 savetype = ".pdf";
@@ -54,10 +54,10 @@ for batch = 1:length(myFiles)
     [~,name,~] = fileparts(BLOCKPATH);
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
-    animalIDA = char(brokenID{2});
-    animalIDC = char(brokenID{5});
-    taskA = char(brokenID{3});
-    taskC = char(brokenID{6});
+    animalIDA = char(brokenID{1});
+    animalIDC = char(brokenID{3});
+    taskA = char(brokenID{2});
+    taskC = char(brokenID{4});
     for streamAorC = 1:2
         if streamAorC == 1
             emptylogicA = strcmp(animalIDA,emptyID);
@@ -84,19 +84,27 @@ for batch = 1:length(myFiles)
         ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
         ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
         if streamAorC == 1
+            if ~isfield(data.epocs, 'aRw_')
+                disp('Epoc for position A is missing...')
+                continue
+            end
             disp("Plotting stream A")
             STREAM_STORE1 = 'x405A'; % name of the 405 store
             STREAM_STORE2 = 'x465A'; % name of the 465 store
-            TITLE{batch} = strcat("DA",animalIDA," ",taskA," ","Active Nosepoke");
+            TITLE{batch} = strcat(animalIDA," ",taskA," ","Active Nosepoke");
             savepath = strcat(figure_savepath,"DA",animalIDA,"/");
             if not(isfolder(savepath))
                 mkdir(savepath);
             end
         elseif streamAorC == 2
+            if ~isfield(data.epocs, 'bRw_')
+                disp('Epoc for position C is missing...')
+                continue
+            end
             disp("Plotting stream C")
             STREAM_STORE1 = 'x405C'; % name of the 405 store
             STREAM_STORE2 = 'x465C'; % name of the 465 store
-            TITLE{batch} = strcat("DA",animalIDC," ",taskC," ","Active Nosepoke");
+            TITLE{batch} = strcat(animalIDC," ",taskC," ","Active Nosepoke");
             savepath = strcat(figure_savepath,"DA",animalIDC,"/");
             if not(isfolder(savepath))
                 mkdir(savepath);
@@ -290,7 +298,8 @@ for batch = 1:length(myFiles)
         disp(savdisp)
         
         filename = strcat(savepath,TITLE{batch},savetype);
-        saveas(fig{batch},filename)
+        print(filename,'-dpdf','-bestfit');
+        
         
         clf reset   
     end
