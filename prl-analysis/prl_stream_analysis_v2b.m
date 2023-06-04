@@ -5,18 +5,16 @@ warning off
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore
-% amp_window = [-1 2];
+amp_window = [0 2]; % time window to grab amplitude from
+auc_window = [-1 timeWindow];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-%array column length definition to eliminate error produced
-%when trying to fill array with stream snips of different lengths
-%as of this version, the easiest way to determine minArrayLength is to set
-%it low, run the script, and see how large the arrays are coming out
+toPlot = 0; % 1 = plot figures, 0 = don't plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('/Users/brandon/DA_PRL','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('E:\Google Drive\My Drive\prl\PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -28,6 +26,7 @@ myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name},'.mat'));
 numFiles = length(myFiles);
 IDs = {};
+phaseList = {};
 treatList = {};
 
 AMPdFF_analysis = cell(numFiles,5);
@@ -48,13 +47,11 @@ master_iNoRew_STREAMz = zeros(numFiles,epocArrayLen);
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
-    [~,treatment,~] = fileparts(myDir);
-    tempID = cellstr(name);
-    tempTreat = cellstr(treatment);
-    IDs = vertcat(IDs,tempID);
-    treatList = vertcat(treatList,tempTreat);
     brokenID = strsplit(name,'_');
-    prl_phase = char(brokenID(2));
+    IDs{i} = cellstr(strtrim(brokenID{1}));
+    phaseList{i} = cellstr(strtrim(brokenID{2}));
+    treatList{i} = cellstr(strtrim(brokenID{3}));
+
     load(filename)
 
     if isfield(data.streams, 'x405A')
@@ -111,7 +108,7 @@ for i = 1:numFiles
 
 
 
-        [session_identifiers,lever_session_ts,trial_number,trial_name,lever_latency] = sessionArraySort(cue,cRew,...
+        [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
         epocList = {cue;cRew;cNoRew;iRew;iNoRew};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
@@ -125,7 +122,7 @@ for i = 1:numFiles
         outputAUCdFF = {cueAUCdFF;cRewAUCdFF;cNoRewAUCdFF;iRewAUCdFF;iNoRewAUCdFF};
         outputAUCz = {cueAUCz;cRewAUCz;cNoRewAUCz;iRewAUCz;iNoRewAUCz};
          
-
+        data.analysis.sessionID = session_identifiers;
         
     elseif isfield(data.streams, 'x405C')
         ISOS = 'x405C';
@@ -179,7 +176,7 @@ for i = 1:numFiles
         iRewAUCz = zeros(height(iRew),1);
         iNoRewAUCz = zeros(height(iNoRew),1);
 
-        [session_identifiers,lever_session_ts,trial_number,trial_name,lever_latency] = sessionArraySort(cue,cRew,...
+        [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
         epocList = {cue;cRew;cNoRew;iRew;iNoRew};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
@@ -193,41 +190,32 @@ for i = 1:numFiles
         outputAUCdFF = {cueAUCdFF;cRewAUCdFF;cNoRewAUCdFF;iRewAUCdFF;iNoRewAUCdFF};
         outputAUCz = {cueAUCz;cRewAUCz;cNoRewAUCz;iRewAUCz;iNoRewAUCz};
         
+        data.analysis.sessionID = session_identifiers;
     end
     %time array used for all streams%
     session_time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
     ind = find(session_time>t,1);% find first index of when time crosses threshold
     session_time = session_time(ind:end); % reformat vector to only include allowed time
-    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(ind:end);
-    data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
+    SIGNAL_raw = data.streams.(SIGNAL).data(ind:end);
+    ISOS_raw = data.streams.(ISOS).data(ind:end);
    
     %downsample streams and time array by N times%
-    data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
-    data.streams.(SIGNAL).data = downsample(data.streams.(SIGNAL).data, N);
-    minStreamLength = min(length(data.streams.(ISOS).data),length(data.streams.(SIGNAL).data));
-    data.streams.(ISOS).data = data.streams.(ISOS).data(1:minStreamLength);
-    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(1:minStreamLength);
-
-    ISOS_raw = data.streams.(ISOS).data;
-    SIGNAL_raw = data.streams.(SIGNAL).data;
-    
-    % % Perform ratiometric correction
-    % ratio = SIGNAL_raw ./ ISOS_raw; % calculate ratio of raw signal to isosbestic signal
-    % ratio_smoothed = smoothdata(ratio); % smooth the ratio signal to remove noise
-    % SIGNAL_filtered = ratio_smoothed .* ISOS_raw; % multiply smoothed ratio signal by isosbestic signal
+    ISOS_raw = downsample(ISOS_raw, N);
+    SIGNAL_raw = downsample(SIGNAL_raw, N);
+    minStreamLength = min(length(ISOS_raw),length(SIGNAL_raw));
+    ISOS_raw = ISOS_raw(1:minStreamLength);
+    SIGNAL_raw = SIGNAL_raw(1:minStreamLength);
     
     session_time = downsample(session_time, N);
     ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(SIGNAL).fs*N;
-
+    [~,baseSt] = min(abs(ts1 - baseline(1)));
+    [~,baseEn] = min(abs(ts1 - baseline(2)));
+    [~,ampSt] = min(abs(ts1 - amp_window(1)));
+    [~,ampEn] = min(abs(ts1 - amp_window(2)));
+    [~,aucSt] = min(abs(ts1 - auc_window(1)));
+    [~,aucEn] = min(abs(ts1 - auc_window(2)));
     
-    %detrend & dFF%
-    bls = polyfit(data.streams.(ISOS).data,data.streams.(SIGNAL).data,1);
-    Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
-    Y_dF_all = data.streams.(SIGNAL).data - Y_fit_all; %dF (units mV) is not dFF
-    dFF = 100*(Y_dF_all)./Y_fit_all;
-    std_dFF = std(double(dFF));
-    detrend_dFF = detrend(dFF);
-    
+    %% Streams baselined to cue preceding it %%
     cueArray = session_identifiers(1:2:end,:);
     if session_identifiers(end,2) == 0
         session_identifiers = session_identifiers(1:end-1,:);
@@ -258,15 +246,12 @@ for i = 1:numFiles
             arrayDif = op - epocArrayLen;
             leverSigRaw = leverSigRaw(1,1:end-arrayDif);
         end
-            
         lever_raw(m,:) = leverSigRaw;
                 
     end
     sessionSTREAMSraw{i,1} = lever_raw;
-    [~,baseSt] = min(abs(ts1 - baseline(1)));
-    [~,baseEn] = min(abs(ts1 - baseline(2)));
-    epocON = find(ts1>=0,1);
-    epocOFF = find(ts1<=timeWindow,1,'last');
+    amp_cueBase = [];
+    auc_cueBase = [];
     for n = 1:height(lever_raw)
         % dF/F
         meanCue = cueBaseMean(n,1);
@@ -278,12 +263,13 @@ for i = 1:numFiles
         meanCueBase_dFF = mean(levers_dFF(n,baseSt:baseEn));
         stdCueBase_dFF = std(levers_dFF(n,baseSt:baseEn));
         levers_z(n,1:epocArrayLen) = (levers_dFF(n,1:epocArrayLen) - meanCueBase_dFF) / stdCueBase_dFF;
+        amp_cueBase(n,1) = max(levers_z(n,ampSt:ampEn));
+        auc_cueBase(n,1) = trapz(ts1(1,aucSt:aucEn));
     end
+%     firstLever(i,1:epocArrayLen) = levers_z(1,:);
+%     lastLever(i,1:epocArrayLen) = levers_z(end,:);
     sessionSTREAMSz{i,1} = mean(levers_z);
-    % trialNames = cellstr(num2str(session_identifiers(2:2:end,2)));
     trialNames = array2table(session_identifiers(2:2:end,2),'VariableNames',{'Trial_Type'});
-    % epocTime = cellstr(num2str(ts1'));
-    % trialNames = cell2table(trialNames,'VariableNames',{'Trial Type'});
     levers_z = array2table(levers_z);
     levers_z = horzcat(trialNames,levers_z);
     cRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 1, 2:end));
@@ -291,6 +277,143 @@ for i = 1:numFiles
     iRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 3, 2:end));
     iNoRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 4, 2:end));
 
+    amp_cueBase = array2table(amp_cueBase);
+    amp_cueBase = horzcat(trialNames,amp_cueBase);
+    auc_cueBase = array2table(auc_cueBase);
+    auc_cueBase = horzcat(trialNames,auc_cueBase);
+
+    if ~isempty(cRew_cueBase) && height(cRew_cueBase) > 1
+        firstcRew(i,1:epocArrayLen) = cRew_cueBase(1,:);
+        firstcRew_AMP(i,1) = max(cRew_cueBase(1,ampSt:ampEn));
+        firstcRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cRew_cueBase(1,aucSt:aucEn));
+        lastcRew(i,1:epocArrayLen) = cRew_cueBase(end,:);
+        lastcRew_AMP(i,1) = max(cRew_cueBase(end,ampSt:ampEn));
+        lastcRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cRew_cueBase(end,aucSt:aucEn));
+
+        amp_cRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
+        auc_cRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
+    elseif height(cRew_cueBase) == 1
+        firstcRew(i,1:epocArrayLen) = cRew_cueBase(1,:);
+        firstcRew_AMP(i,1) = max(cRew_cueBase(1,ampSt:ampEn));
+        firstcRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cRew_cueBase(1,aucSt:aucEn));
+        lastcRew(i,1:epocArrayLen) = nan;
+        lastcRew_AMP(i,1) = nan;
+        lastcRew_AUC(i,1) = nan;
+
+        amp_cRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
+        auc_cRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
+    elseif isempty(cRew_cueBase)
+        firstcRew(i,1:epocArrayLen) = nan;
+        firstcRew_AMP(i,1) = nan;
+        firstcRew_AUC(i,1) = nan;
+        lastcRew(i,1:epocArrayLen) = nan;
+        lastcRew_AMP(i,1) = nan;
+        lastcRew_AUC(i,1) = nan;
+
+        amp_cRew_cueBase = nan;
+        auc_cRew_cueBase = nan;
+    end
+
+    if ~isempty(cNoRew_cueBase) && height(cNoRew_cueBase) > 1
+        firstcNoRew(i,1:epocArrayLen) = cNoRew_cueBase(1,:);
+        firstcNoRew_AMP(i,1) = max(cNoRew_cueBase(1,ampSt:ampEn));
+        firstcNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cNoRew_cueBase(1,aucSt:aucEn));
+        lastcNoRew(i,1:epocArrayLen) = cNoRew_cueBase(end,:);
+        lastcNoRew_AMP(i,1) = max(cNoRew_cueBase(end,ampSt:ampEn));
+        lastcNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cNoRew_cueBase(end,aucSt:aucEn));
+
+        amp_cNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 2,2));
+        auc_cNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 2,2));
+    elseif height(cNoRew_cueBase) == 1
+        firstcNoRew(i,1:epocArrayLen) = cNoRew_cueBase(1,:);
+        firstcNoRew_AMP(i,1) = max(cNoRew_cueBase(1,ampSt:ampEn));
+        firstcNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cNoRew_cueBase(1,aucSt:aucEn));
+        lastcNoRew(i,1:epocArrayLen) = nan;
+        lastcNoRew_AMP(i,1) = nan;
+        lastcNoRew_AUC(i,1) = nan;
+
+        amp_cNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 2,2));
+        auc_cNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 2,2));
+    elseif isempty(cNoRew_cueBase)
+        firstcNoRew(i,1:epocArrayLen) = nan;
+        firstcNoRew_AMP(i,1) = nan;
+        firstcNoRew_AUC(i,1) = nan;
+        lastcNoRew(i,1:epocArrayLen) = nan;
+        lastcNoRew_AMP(i,1) = nan;
+        lastcNoRew_AUC(i,1) = nan;
+
+        amp_cNoRew_cueBase = nan;
+        auc_cNoRew_cueBase = nan;
+    end
+
+    if ~isempty(iRew_cueBase) && height(iRew_cueBase) > 1
+        firstiRew(i,1:epocArrayLen) = iRew_cueBase(1,:);
+        firstiRew_AMP(i,1) = max(iRew_cueBase(1,ampSt:ampEn));
+        firstiRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iRew_cueBase(1,aucSt:aucEn));
+        lastiRew(i,1:epocArrayLen) = iRew_cueBase(end,:);
+        lastiRew_AMP(i,1) = max(iRew_cueBase(end,ampSt:ampEn));
+        lastiRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iRew_cueBase(end,aucSt:aucEn));
+
+        amp_iRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 3,2));
+        auc_iRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 3,2));
+    elseif height(iRew_cueBase) == 1
+        firstiRew(i,1:epocArrayLen) = iRew_cueBase(1,:);
+        firstiRew_AMP(i,1) = max(iRew_cueBase(1,ampSt:ampEn));
+        firstiRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iRew_cueBase(1,aucSt:aucEn));
+        lastiRew(i,1:epocArrayLen) = nan;
+        lastiRew_AMP(i,1) = nan;
+        lastiRew_AUC(i,1) = nan;
+
+        amp_iRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 3,2));
+        auc_iRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 3,2));
+    elseif isempty(iRew_cueBase)
+        firstiRew(i,1:epocArrayLen) = nan;
+        firstiRew_AMP(i,1) = nan;
+        firstiRew_AUC(i,1) = nan;
+        lastiRew(i,1:epocArrayLen) = nan;
+        lastiRew_AMP(i,1) = nan;
+        lastiRew_AUC(i,1) = nan;
+
+        amp_iRew_cueBase = nan;
+        auc_iRew_cueBase = nan;
+    end
+
+    if ~isempty(iNoRew_cueBase) && height(iNoRew_cueBase) > 1
+        firstiNoRew(i,1:epocArrayLen) = iNoRew_cueBase(1,:);
+        firstiNoRew_AMP(i,1) = max(iNoRew_cueBase(1,ampSt:ampEn));
+        firstiNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iNoRew_cueBase(1,aucSt:aucEn));
+        lastiNoRew(i,1:epocArrayLen) = iNoRew_cueBase(end,:);
+        lastiNoRew_AMP(i,1) = max(iNoRew_cueBase(end,ampSt:ampEn));
+        lastiNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iNoRew_cueBase(end,aucSt:aucEn));
+
+        amp_iNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 4,2));
+        auc_iNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 4,2));
+    elseif height(iNoRew_cueBase) == 1
+        firstiNoRew(i,1:epocArrayLen) = iNoRew_cueBase(1,:);
+        firstiNoRew_AMP(i,1) = max(iNoRew_cueBase(1,ampSt:ampEn));
+        firstiNoRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),iNoRew_cueBase(1,aucSt:aucEn));
+        lastiNoRew(i,1:epocArrayLen) = nan;
+        lastiNoRew_AMP(i,1) = nan;
+        lastiNoRew_AUC(i,1) = nan;
+
+        amp_iNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 4,2));
+        auc_iNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 4,2));
+    elseif isempty(iNoRew_cueBase)
+        firstiNoRew(i,1:epocArrayLen) = nan;
+        firstiNoRew_AMP(i,1) = nan;
+        firstiNoRew_AUC(i,1) = nan;
+        lastiNoRew(i,1:epocArrayLen) = nan;
+        lastiNoRew_AMP(i,1) = nan;
+        lastiNoRew_AUC(i,1) = nan;
+
+        amp_iNoRew_cueBase = nan;
+        auc_iNoRew_cueBase = nan;
+    end
+
+    leverLatencies(i,1) = mean(leverArray(:,1) - cueArray(:,1));
+%     data.analysis.levers_z = levers_z;
+
+    %% Streams baslined to before each epoc %%
     for k = 1:numel(epocList)
             epoc = double(epocList{k});
             streams_raw = double(outputSTREAMSraw{k,1});
@@ -317,7 +440,6 @@ for i = 1:numFiles
             [~,windEn] = min(abs(session_time - windowEnd));
             epocSigRaw = SIGNAL_raw(1,windSt:windEn);
 
-
             if length(epocSigRaw) < epocArrayLen
                 mn = mean(epocSigRaw(1,end-10:end));
                 epocSigRaw(1,end:epocArrayLen) = mn;
@@ -327,15 +449,12 @@ for i = 1:numFiles
                 epocSigRaw = epocSigRaw(1,1:end-arrayDif);
             end
             streams_raw(ii,1:epocArrayLen) = epocSigRaw;
+
         end
 
         [~,baseSt] = min(abs(ts1 - baseline(1)));
         [~,baseEn] = min(abs(ts1 - baseline(2)));
-        epocON = find(ts1>=0,1);
-        epocOFF = find(ts1<=timeWindow,1,'last');
-        % streams_dFF = zeros(size(streams_raw));
-        % streams_z = zeros(size(streams_raw));
-        
+
         for j = 1:height(streams_raw)
             % dF/F
             meanBase = mean(streams_raw(j,baseSt:baseEn));
@@ -347,13 +466,21 @@ for i = 1:numFiles
             stdBase_dFF = std(streams_dFF(j,baseSt:baseEn));
             streams_z(j,1:epocArrayLen) = (streams_dFF(j,1:epocArrayLen) - meanBase_dFF) / stdBase_dFF;
             % amplitude
-            ampdFF(j) = max(streams_dFF(j,1:epocArrayLen));
-            ampZ(j) = max(streams_z(j,1:epocArrayLen));
+            ampdFF(j) = max(streams_dFF(j,ampSt:ampEn));
+            ampZ(j) = max(streams_z(j,ampSt:ampEn));
             % AUC
-            aucdFF(j) = trapz(ts1(1,epocON:epocOFF),streams_dFF(j,epocON:epocOFF));
-            aucZ(j) = trapz(ts1(1,epocON:epocOFF),streams_z(j,epocON:epocOFF));
+            aucdFF(j) = trapz(ts1(1,aucSt:aucEn),streams_dFF(j,aucSt:aucEn));
+            aucZ(j) = trapz(ts1(1,aucSt:aucEn),streams_z(j,aucSt:aucEn));
         end
-        
+            if k == 1
+                firstCue(i,1:epocArrayLen) = streams_z(1,:);
+                firstCue_AMP(i,1) = max(streams_z(1,ampSt:ampEn));
+                firstCue_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),streams_z(1,aucSt:aucEn));
+                lastCue(i,1:epocArrayLen) = streams_z(end,:);
+                lastCue_AMP(i,1) = max(streams_z(end,ampSt:ampEn));
+                lastCue_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),streams_z(end,aucSt:aucEn));
+            
+            end
             outputSTREAMSraw{k,1} = streams_raw(:,1:epocArrayLen);
             outputSTREAMSdFF{k,1} = streams_dFF(:,1:epocArrayLen);
             outputSTREAMSz{k,1} = streams_z(:,1:epocArrayLen);
@@ -389,6 +516,11 @@ for i = 1:numFiles
     master_cNoRew_cueBase_STREAMz(i,:) = mean(cNoRew_cueBase,1);
     master_iRew_cueBase_STREAMz(i,:) = mean(iRew_cueBase,1);
     master_iNoRew_cueBase_STREAMz(i,:) = mean(iNoRew_cueBase,1);
+
+    amp_cueBase_analysis(i,1:5) = {mean(outputAMPz{1},1) mean(amp_cRew_cueBase,1)...
+        mean(amp_cNoRew_cueBase,1) mean(amp_iRew_cueBase,1) mean(amp_iNoRew_cueBase,1)};
+    auc_cueBase_analysis(i,1:5) = {mean(outputAUCz{1},1) mean(auc_cRew_cueBase,1)...
+        mean(auc_cNoRew_cueBase,1) mean(auc_iRew_cueBase,1) mean(auc_iNoRew_cueBase,1)};
    
     
     AMPdFF_analysis(i,1:5) = {mean(outputAMPdFF{1},1) mean(outputAMPdFF{2},1)...
@@ -401,170 +533,266 @@ for i = 1:numFiles
     AUCz_analysis(i,1:5) = {mean(outputAUCz{1},1) mean(outputAUCz{2},1)...
         mean(outputAUCz{3},1) mean(outputAUCz{4},1) mean(outputAUCz{5},1)};
 
+    AMPz_fst_lst_analysis(i,1:10) = {mean(firstCue_AMP,1) mean(lastCue_AMP,1) mean(firstcRew_AMP,1)...
+        mean(lastcRew_AMP,1) mean(firstcNoRew_AMP,1) mean(lastcNoRew_AMP,1) mean(firstiRew_AMP,1) mean(lastiRew_AMP,1)...
+        mean(firstiNoRew_AMP,1) mean(lastiNoRew_AMP,1)};
+    AUCz_fst_lst_analysis(i,1:10) = {mean(firstCue_AUC,1) mean(lastCue_AUC,1) mean(firstcRew_AUC,1)...
+        mean(lastcRew_AUC,1) mean(firstcNoRew_AUC,1) mean(lastcNoRew_AUC,1) mean(firstiRew_AUC,1) mean(lastiRew_AUC,1)...
+        mean(firstiNoRew_AUC,1) mean(lastiNoRew_AUC,1)};
     
+
+    % save(filename,'data');
         
 end
-IDlist = cell2table(IDs,'VariableNames',{'ID'});
-treatList = cell2table(treatList,'VariableNames',{'Treatment'});
+idList = cell2table(IDs','VariableNames',{'ID'});
+phaseList = cell2table(phaseList','VariableNames',{'Phase'});
+treatList = cell2table(treatList','VariableNames',{'Treatment'});
+
+
 %% Amplitude Table %%
-% AMPdFF_analysis(cellfun(@(x) x==0,AMPdFF_analysis,'UniformOutput',false)) = {NaN};
-AMPdFF_analysis_table = cell2table(AMPdFF_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-AMPdFF_analysis_table = horzcat(IDlist,treatList,AMPdFF_analysis_table);
-% AMPz_analysis(cellfun(@(x) x==0,AMPz_analysis,'UniformOutput',false)) = {NaN};
 AMPz_analysis_table = cell2table(AMPz_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-AMPz_analysis_table = horzcat(IDlist,treatList,AMPz_analysis_table);
+AMPz_analysis_table = horzcat(idList,treatList,AMPz_analysis_table);
+amp_cueBase_table = cell2table(amp_cueBase_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
+amp_cueBase_table = horzcat(idList,treatList,phaseList,amp_cueBase_table);
 %% Area Under Curve Table %%
-% AUCdFF_analysis(cellfun(@(x) x==0,AUCdFF_analysis,'UniformOutput',false)) = {NaN};
-AUCdFF_analysis_table = cell2table(AUCdFF_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-AUCdFF_analysis_table = horzcat(IDlist,treatList,AUCdFF_analysis_table);
-% AUCz_analysis(cellfun(@(x) x==0,AUCz_analysis,'UniformOutput',false)) = {NaN};
 AUCz_analysis_table = cell2table(AUCz_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-AUCz_analysis_table = horzcat(IDlist,treatList,AUCz_analysis_table);
+AUCz_analysis_table = horzcat(idList,treatList,AUCz_analysis_table);
+auc_cueBase_table = cell2table(auc_cueBase_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
+auc_cueBase_table = horzcat(idList,treatList,phaseList,auc_cueBase_table);
+%% Epoc Stream Tables Baselined to Cue %%
+a_cue_STREAMz = array2table(master_cue_STREAMz);
+a_cue_STREAMz = horzcat(idList,a_cue_STREAMz);
+a_cRew_cueBase_STREAMz = array2table(master_cRew_cueBase_STREAMz);
+a_cRew_cueBase_STREAMz = horzcat(idList,a_cRew_cueBase_STREAMz);
+a_cNoRew_cueBase_STREAMz = array2table(master_cNoRew_cueBase_STREAMz);
+a_cNoRew_cueBase_STREAMz = horzcat(idList,a_cNoRew_cueBase_STREAMz);
+a_iRew_cueBase_STREAMz = array2table(master_iRew_cueBase_STREAMz);
+a_iRew_cueBase_STREAMz = horzcat(idList,a_iRew_cueBase_STREAMz);
+a_iNoRew_cueBase_STREAMz = array2table(master_iNoRew_cueBase_STREAMz);
+a_iNoRew_cueBase_STREAMz = horzcat(idList,a_iNoRew_cueBase_STREAMz);
 
-%% Plots for each epoc %%
-f1 = figure;
-subplot(5,1,1)
-plot(ts1,mean(master_cue_STREAMz,1,'omitnan'),'b')
-hold on
-cue_std = std(master_cue_STREAMz,'omitnan')/sqrt(height(master_cue_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cue_STREAMz,1,'omitnan') + cue_std, fliplr(mean(master_cue_STREAMz,1,'omitnan') - cue_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Cue')
-ylabel('GrabDA dF/F (z-Score)')
+if toPlot == 1
+    %% Plots for each epoc %%
+    f1 = figure;
+    subplot(5,1,1)
+    plot(ts1,mean(master_cue_STREAMz,1,'omitnan'),'b')
+    hold on
+    cue_std = std(master_cue_STREAMz,'omitnan')/sqrt(height(master_cue_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cue_STREAMz,1,'omitnan') + cue_std, fliplr(mean(master_cue_STREAMz,1,'omitnan') - cue_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Cue')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,2)
+    plot(ts1,mean(master_cRew_STREAMz,1,'omitnan'),'b')
+    hold on
+    cRew_std = std(master_cRew_STREAMz,'omitnan')/sqrt(height(master_cRew_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cRew_STREAMz,1,'omitnan') + cRew_std, fliplr(mean(master_cRew_STREAMz,1,'omitnan') - cRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Correct Reward')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,3)
+    plot(ts1,mean(master_cNoRew_STREAMz,1,'omitnan'),'b')
+    hold on
+    cNoRew_std = std(master_cNoRew_STREAMz,'omitnan')/sqrt(height(master_cNoRew_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cNoRew_STREAMz,1,'omitnan') + cNoRew_std, fliplr(mean(master_cNoRew_STREAMz,1,'omitnan') - cNoRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Correct No Reward')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,4)
+    plot(ts1,mean(master_iRew_STREAMz,1,'omitnan'),'b')
+    hold on
+    iRew_std = std(master_iRew_STREAMz,'omitnan')/sqrt(height(master_iRew_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_iRew_STREAMz,1,'omitnan') + iRew_std, fliplr(mean(master_iRew_STREAMz,1,'omitnan') - iRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Incorrect Reward')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,5)
+    plot(ts1,mean(master_iNoRew_STREAMz,1,'omitnan'),'b')
+    hold on
+    iNoRew_std = std(master_iNoRew_STREAMz,'omitnan')/sqrt(height(master_iNoRew_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_iNoRew_STREAMz,1,'omitnan') + iNoRew_std, fliplr(mean(master_iNoRew_STREAMz,1,'omitnan') - iNoRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Incorrect No Reward')
+    ylabel('GrabDA dF/F (z-Score)')
+    xlabel('Time (s)')
+    sgtitle(treatment)
+    
+    f2 = figure;
+    subplot(5,1,1)
+    plot(ts1,mean(master_cue_STREAMz,1,'omitnan'),'b')
+    hold on
+    cue_std = std(master_cue_STREAMz,'omitnan')/sqrt(height(master_cue_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cue_STREAMz,1,'omitnan') + cue_std, fliplr(mean(master_cue_STREAMz,1,'omitnan') - cue_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Cue')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,2)
+    plot(ts1,mean(master_cRew_cueBase_STREAMz,1,'omitnan'),'b')
+    hold on
+    cRew_std = std(master_cRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_cRew_cueBase_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cRew_cueBase_STREAMz,1,'omitnan') + cRew_std, fliplr(mean(master_cRew_cueBase_STREAMz,1,'omitnan') - cRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Correct Reward (F0 = Cue)')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,3)
+    plot(ts1,mean(master_cNoRew_cueBase_STREAMz,1,'omitnan'),'b')
+    hold on
+    cNoRew_std = std(master_cNoRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_cNoRew_cueBase_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_cNoRew_cueBase_STREAMz,1,'omitnan') + cNoRew_std, fliplr(mean(master_cNoRew_cueBase_STREAMz,1,'omitnan') - cNoRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Correct No Reward (F0 = Cue)')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,4)
+    plot(ts1,mean(master_iRew_cueBase_STREAMz,1,'omitnan'),'b')
+    hold on
+    iRew_std = std(master_iRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_iRew_cueBase_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_iRew_cueBase_STREAMz,1,'omitnan') + iRew_std, fliplr(mean(master_iRew_cueBase_STREAMz,1,'omitnan') - iRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Incorrect Reward (F0 = Cue)')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(5,1,5)
+    plot(ts1,mean(master_iNoRew_cueBase_STREAMz,1,'omitnan'),'b')
+    hold on
+    iNoRew_std = std(master_iNoRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_iNoRew_cueBase_STREAMz));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(master_iNoRew_cueBase_STREAMz,1,'omitnan') + iNoRew_std, fliplr(mean(master_iNoRew_cueBase_STREAMz,1,'omitnan') - iNoRew_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Incorrect No Reward (F0 = Cue)')
+    ylabel('GrabDA dF/F (z-Score)')
+    xlabel('Time (s)')
+    sgtitle(treatment)
+    
+    f3 = figure;
+    subplot(1,2,1)
+    plot(ts1,mean(firstLever,1,'omitnan'),'b')
+    hold on
+    Fst_std = std(firstLever,'omitnan')/sqrt(height(firstLever));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(firstLever,1,'omitnan') + Fst_std, fliplr(mean(firstLever,1,'omitnan') - Fst_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('First Lever Press')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(1,2,2)
+    plot(ts1,mean(lastLever,1,'omitnan'),'b')
+    hold on
+    Lst_std = std(lastLever,'omitnan')/sqrt(height(lastLever));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(lastLever,1,'omitnan') + Lst_std, fliplr(mean(lastLever,1,'omitnan') - Lst_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Last Lever Press')
+    ylabel('GrabDA dF/F (z-Score)')
+    sgtitle(treatment)
+    
+    f4 = figure;
+    subplot(1,2,1)
+    plot(ts1,mean(firstCue,1,'omitnan'),'b')
+    hold on
+    Fst_std = std(firstCue,'omitnan')/sqrt(height(firstCue));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(firstCue,1,'omitnan') + Fst_std, fliplr(mean(firstCue,1,'omitnan') - Fst_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('First Cue')
+    ylabel('GrabDA dF/F (z-Score)')
+    
+    subplot(1,2,2)
+    plot(ts1,mean(lastCue,1,'omitnan'),'b')
+    hold on
+    Lst_std = std(lastCue,'omitnan')/sqrt(height(lastCue));
+    XX = [ts1, fliplr(ts1)];
+    YY = [mean(lastCue,1,'omitnan') + Lst_std, fliplr(mean(lastCue,1,'omitnan') - Lst_std)];
+    % Plot filled standard error bands.
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    % Plot line at x=0
+    xline(0,'LineWidth',2,'Color','black')
+    title('Last Cue')
+    ylabel('GrabDA dF/F (z-Score)')
+    sgtitle(treatment)
+end
+amp_cueBase_table = sortrows(amp_cueBase_table,{'Phase','Treatment'},{'ascend','descend'});
+auc_cueBase_table = sortrows(auc_cueBase_table,{'Phase','Treatment'},{'ascend','descend'});
 
-subplot(5,1,2)
-plot(ts1,mean(master_cRew_STREAMz,1,'omitnan'),'b')
-hold on
-cRew_std = std(master_cRew_STREAMz,'omitnan')/sqrt(height(master_cRew_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cRew_STREAMz,1,'omitnan') + cRew_std, fliplr(mean(master_cRew_STREAMz,1,'omitnan') - cRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Correct Reward')
-ylabel('GrabDA dF/F (z-Score)')
+prl_stream_analysis.acq1.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Acq1'),:);
+prl_stream_analysis.acq2.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Acq2'),:);
+prl_stream_analysis.rev1.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev1'),:);
+prl_stream_analysis.rev2.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev2'),:);
+prl_stream_analysis.rev3.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev3'),:);
 
-subplot(5,1,3)
-plot(ts1,mean(master_cNoRew_STREAMz,1,'omitnan'),'b')
-hold on
-cNoRew_std = std(master_cNoRew_STREAMz,'omitnan')/sqrt(height(master_cNoRew_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cNoRew_STREAMz,1,'omitnan') + cNoRew_std, fliplr(mean(master_cNoRew_STREAMz,1,'omitnan') - cNoRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Correct No Reward')
-ylabel('GrabDA dF/F (z-Score)')
+prl_stream_analysis.acq2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Acq2'),:);
+prl_stream_analysis.rev1.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev1'),:);
+prl_stream_analysis.rev2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev2'),:);
+prl_stream_analysis.rev3.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev3'),:);
 
-subplot(5,1,4)
-plot(ts1,mean(master_iRew_STREAMz,1,'omitnan'),'b')
-hold on
-iRew_std = std(master_iRew_STREAMz,'omitnan')/sqrt(height(master_iRew_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_iRew_STREAMz,1,'omitnan') + iRew_std, fliplr(mean(master_iRew_STREAMz,1,'omitnan') - iRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Incorrect Reward')
-ylabel('GrabDA dF/F (z-Score)')
-
-subplot(5,1,5)
-plot(ts1,mean(master_iNoRew_STREAMz,1,'omitnan'),'b')
-hold on
-iNoRew_std = std(master_iNoRew_STREAMz,'omitnan')/sqrt(height(master_iNoRew_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_iNoRew_STREAMz,1,'omitnan') + iNoRew_std, fliplr(mean(master_iNoRew_STREAMz,1,'omitnan') - iNoRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Incorrect No Reward')
-ylabel('GrabDA dF/F (z-Score)')
-xlabel('Time (s)')
-
-f2 = figure;
-subplot(5,1,1)
-plot(ts1,mean(master_cue_STREAMz,1,'omitnan'),'b')
-hold on
-cue_std = std(master_cue_STREAMz,'omitnan')/sqrt(height(master_cue_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cue_STREAMz,1,'omitnan') + cue_std, fliplr(mean(master_cue_STREAMz,1,'omitnan') - cue_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Cue')
-ylabel('GrabDA dF/F (z-Score)')
-
-subplot(5,1,2)
-plot(ts1,mean(master_cRew_cueBase_STREAMz,1,'omitnan'),'b')
-hold on
-cRew_std = std(master_cRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_cRew_cueBase_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cRew_cueBase_STREAMz,1,'omitnan') + cRew_std, fliplr(mean(master_cRew_cueBase_STREAMz,1,'omitnan') - cRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Correct Reward (F0 = Cue)')
-ylabel('GrabDA dF/F (z-Score)')
-
-subplot(5,1,3)
-plot(ts1,mean(master_cNoRew_cueBase_STREAMz,1,'omitnan'),'b')
-hold on
-cNoRew_std = std(master_cNoRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_cNoRew_cueBase_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_cNoRew_cueBase_STREAMz,1,'omitnan') + cNoRew_std, fliplr(mean(master_cNoRew_cueBase_STREAMz,1,'omitnan') - cNoRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Correct No Reward (F0 = Cue)')
-ylabel('GrabDA dF/F (z-Score)')
-
-subplot(5,1,4)
-plot(ts1,mean(master_iRew_cueBase_STREAMz,1,'omitnan'),'b')
-hold on
-iRew_std = std(master_iRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_iRew_cueBase_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_iRew_cueBase_STREAMz,1,'omitnan') + iRew_std, fliplr(mean(master_iRew_cueBase_STREAMz,1,'omitnan') - iRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Incorrect Reward (F0 = Cue)')
-ylabel('GrabDA dF/F (z-Score)')
-
-subplot(5,1,5)
-plot(ts1,mean(master_iNoRew_cueBase_STREAMz,1,'omitnan'),'b')
-hold on
-iNoRew_std = std(master_iNoRew_cueBase_STREAMz,'omitnan')/sqrt(height(master_iNoRew_cueBase_STREAMz));
-XX = [ts1, fliplr(ts1)];
-YY = [mean(master_iNoRew_cueBase_STREAMz,1,'omitnan') + iNoRew_std, fliplr(mean(master_iNoRew_cueBase_STREAMz,1,'omitnan') - iNoRew_std)];
-% Plot filled standard error bands.
-h = fill(XX, YY, 'r');
-set(h, 'facealpha',.25,'edgecolor','none')
-% Plot line at x=0
-xline(0,'LineWidth',2,'Color','black')
-title('Incorrect No Reward (F0 = Cue)')
-ylabel('GrabDA dF/F (z-Score)')
-xlabel('Time (s)')
 toc
 
 disp("Successfully analyzed .mat files")

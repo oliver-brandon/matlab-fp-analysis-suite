@@ -3,23 +3,25 @@
 % Plots the raw, dFF, and detrended dFF on seperate plots and saves a
 % figure to a user designated directory. Can also downsample if necessary
 % by changing the value of 'N' below.
-clear
+clear all;
+close all;
+clc;
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Name = 'GrabNE2h'; % example: 'GrabDA4.4'
+Grab_Name = 'GrabDA4.4'; % example: 'GrabDA4.4'
 t = 5; % first t seconds are discarded to remove LED on artifact
 N = 1; % downsample signal N times
 ISOS = 'x405C'; % set name of isosbestic signal
 Grab = 'x465C'; % set name of Grab signal
 x = 60; % start of window (s)
-y = 70; % end of window (s)
+y = 90; % end of window (s)
 fontSize = 8; % font size for figure ylabels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir(pwd, 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/_Lab/signalTest_tanks', 'Select a tank to plot');
 figsavepath = strcat(TANK_NAME,'/');
 [~,name,~] = fileparts(TANK_NAME);
 TITLE = strrep(name,'_',' ');
@@ -98,15 +100,20 @@ subplot(4,1,1)
 plot(time,Grab_raw,'b')
 title(TITLE)
 ylabel(sprintf('Raw %s (mV)',Grab_Name),"FontSize",fontSize)
+xlim([t floor(time(1,end))])
 subplot(4,1,2)
 plot(time,Grab_dFF,'b')
 ylabel(sprintf('%s dF/F',Grab_Name),"FontSize",fontSize)
+xlim([t floor(time(1,end))])
 subplot(4,1,3)
 plot(time,Grab_dFF_z,'b')
 ylabel(sprintf('%s dF/F (z-Score)',Grab_Name),"FontSize",fontSize)
+xlim([t floor(time(1,end))])
 subplot(4,1,4)
 plot(time_snip,Grab_snip,'b')
-title('10s Window')
+xlim([x y])
+timeDiff = y-x;
+title(sprintf('%ds Window',timeDiff))
 ylabel(sprintf('%s dF/F (z-Score)',Grab_Name),"FontSize",fontSize)
 xlabel('Time (s)')
 
@@ -117,19 +124,24 @@ plot(time,Grab_raw,'b')
 ylabel(sprintf('Uncorrected\n %s (mV)',Grab_Name),"FontSize",fontSize)
 set(gca,'YColor','black','Box', 'on','Color','w')
 set(get(gca,'YLabel'),'Color','black')
+xlim([t floor(time(1,end))])
 yyaxis right
 plot(time,ISOS_raw,'r')
 ylabel(sprintf('Uncorrected\n Isosbestic (mV)'),"FontSize",fontSize)
 set(gca,'YColor','black','Box', 'on','Color','w')
 set(get(gca, 'YLabel'), 'Rotation', -90, 'Color','black') % Rotate the right ylabel
+
+
 legend(sprintf('%s',Grab_Name),'Isosbestic')
 title(TITLE,"FontSize",12)
 set(gca, 'Children', flipud(get(gca, 'Children')))
 subplot(3,1,2)
 plot(time,Grab_dFF,'b')
+xlim([t floor(time(1,end))])
 ylabel(sprintf('%s dF/F',Grab_Name),"FontSize",fontSize)
 subplot(3,1,3)
 plot(time,Grab_dFF_z,'b')
+xlim([t floor(time(1,end))])
 ylabel(sprintf('%s dF/F (z-Score)',Grab_Name),"FontSize",fontSize)
 xlabel('Time (s)')
 

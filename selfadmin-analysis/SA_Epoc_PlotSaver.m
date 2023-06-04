@@ -25,8 +25,9 @@ VERSION = "1.0";
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% edit these variables %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure_savepath = '/Users/brandon/_Lab/signalTest_tanks/GCaMP/figs/';
-epoc = {'aRL/','bRL/'};
+figure_savepath = '/Volumes/CUDADRIVE/DA_FOOD/Food_SA/Epoc_Figs/'; % include backslash at end of path
+epoc = {'aRw/','bRw/'};
+EPOCNAME = 'Reward Delivery';
 % epoc = {'IL1/','IL2/'};
 savetype = ".pdf";
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,10 +55,10 @@ for batch = 1:length(myFiles)
     [~,name,~] = fileparts(BLOCKPATH);
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
-    animalIDA = char(brokenID{1});
-    animalIDC = char(brokenID{3});
-    taskA = char(brokenID{2});
-    taskC = char(brokenID{4});
+    animalIDA = char(brokenID{2});
+    animalIDC = char(brokenID{5});
+    taskA = char(brokenID{3});
+    taskC = char(brokenID{6});
     for streamAorC = 1:2
         if streamAorC == 1
             emptylogicA = strcmp(animalIDA,emptyID);
@@ -91,8 +92,8 @@ for batch = 1:length(myFiles)
             disp("Plotting stream A")
             STREAM_STORE1 = 'x405A'; % name of the 405 store
             STREAM_STORE2 = 'x465A'; % name of the 465 store
-            TITLE{batch} = strcat(animalIDA," ",taskA," ","Active Nosepoke");
-            savepath = strcat(figure_savepath,"DA",animalIDA,"/");
+            TITLE{batch} = strcat(animalIDA," ",taskA," ",EPOCNAME);
+            savepath = strcat(figure_savepath,animalIDA,"/");
             if not(isfolder(savepath))
                 mkdir(savepath);
             end
@@ -104,8 +105,8 @@ for batch = 1:length(myFiles)
             disp("Plotting stream C")
             STREAM_STORE1 = 'x405C'; % name of the 405 store
             STREAM_STORE2 = 'x465C'; % name of the 465 store
-            TITLE{batch} = strcat(animalIDC," ",taskC," ","Active Nosepoke");
-            savepath = strcat(figure_savepath,"DA",animalIDC,"/");
+            TITLE{batch} = strcat(animalIDC," ",taskC," ",EPOCNAME);
+            savepath = strcat(figure_savepath,animalIDC,"/");
             if not(isfolder(savepath))
                 mkdir(savepath);
             end

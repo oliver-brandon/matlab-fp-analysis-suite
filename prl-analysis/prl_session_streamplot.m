@@ -2,14 +2,13 @@ clear all; close all;
 warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
-baseline = 2; % baseline signal to include before TTL 
-baselineZ = [9 1];
-N = 100; %Downsample N times
-minArrayLen = 72; %timeWindow = 5 - 72, timeWindow = 10 - 123
-%array column length definition to eliminate error produced
-%when trying to fill array with stream snips of different lengths 
-%(negative relationship with N (downsample)
+timeWindow = 15; % the number of seconds after the onset of a TTL to analyze
+baseWindow = 5; % baseline signal to include before TTL 
+baseline = [3 1];
+t = 5; % seconds to clip from start of streams
+N = 10; %Downsample N times
+sigHz = 1017/N;
+epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 zMin = -10;
 zMax = 30;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,171 +33,185 @@ end
 
 if isfield(data.streams, 'x405A')
     ISOS = 'x405A';
-    GRABDA = 'x465A';
+    SIGNAL = 'x465A';
     %time array used for all streams%
-    time1 = (1:length(data.streams.(GRABDA).data))/data.streams.(GRABDA).fs;
+    time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
     %removes the first (t) seconds where the data is wild due to turning on LEDs%
-    t = 0; % time threshold below which we will discard
-    ind = find(time1>t,1);% find first index of when time crosses threshold
-    time1 = time1(ind:end); % reformat vector to only include allowed time
-    data.streams.(GRABDA).data = data.streams.(GRABDA).data(ind:end);
+    ind = find(time>t,1);% find first index of when time crosses threshold
+    time = time(ind:end); % reformat vector to only include allowed time
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(ind:end);
     data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
     
     %downsample streams and time array by N times%
     data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
-    data.streams.(GRABDA).data = downsample(data.streams.(GRABDA).data, N);
-    minLength = min(length(data.streams.(ISOS).data),length(data.streams.(GRABDA).data));
+    data.streams.(SIGNAL).data = downsample(data.streams.(SIGNAL).data, N);
+    minLength = min(length(data.streams.(ISOS).data),length(data.streams.(SIGNAL).data));
     data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
-    data.streams.(GRABDA).data = data.streams.(GRABDA).data(1:minLength);
-    time1 = downsample(time1, N);
-    ts1 = -baseline + (1:minArrayLen) / data.streams.(GRABDA).fs*N;
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(1:minLength);
+    time = downsample(time, N);
+    ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(SIGNAL).fs*N;
+    
+    ISOS_raw = data.streams.(ISOS).data;
+    SIGNAL_raw = data.streams.(SIGNAL).data;
     
     %detrend & dFF%
-    bls = polyfit(data.streams.(ISOS).data,data.streams.(GRABDA).data,1);
-    Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
-    Y_dF_all = data.streams.(GRABDA).data - Y_fit_all; %dF (units mV) is not dFF
+    bls = polyfit(ISOS_raw,SIGNAL_raw,1);
+    Y_fit_all = bls(1) .* ISOS_raw + bls(2);
+    Y_dF_all = SIGNAL_raw - Y_fit_all; %dF (units mV) is not dFF
     dFF = 100*(Y_dF_all)./Y_fit_all;
     std_dFF = std(double(dFF));
-    detrend_465 = detrend(dFF);
-    z465 = zscore(data.streams.(GRABDA).data);
+    dFF = detrend(dFF);
+    z465 = zscore(dFF);
+    
     cueTSA = data.epocs.St1_.onset;
     correct_rewardedA = data.epocs.cRewA.onset;
     correct_norewardA = data.epocs.cNoRewA.onset;
     incorrect_rewardedA = data.epocs.iRewA.onset;
     incorrect_norewardA = data.epocs.iNoRewA.onset;
-    [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cueTSA,correct_rewardedA,...
+    [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cueTSA,correct_rewardedA,...
             correct_norewardA,incorrect_rewardedA,incorrect_norewardA);
-    for e = 1:height(session_ts)
-        e1 = session_ts(e,1)-baseline;
-        e2 = e1+timeWindow+baseline;
-        e3 = session_ts(e,1)-baselineZ(:,2);
-        e4 = session_ts(e,1)-baselineZ(:,1);
-        [~,ind1] = min(abs(time1-e1));
-        [~,ind2] = min(abs(time1-e2));
-        [~,ind3] = min(abs(time1-e3));
-        [~,ind4] = min(abs(time1-e4));
-        GRABDA_zBase = detrend_465(1,ind4:ind3);
-        GRABDA_signal = detrend_465(1,ind1:ind2);
-        GRABDA_time = time1(1,ind1:ind2);
-        zb = mean(GRABDA_zBase);
-        zsd = std(GRABDA_zBase);
-        zfinal = (GRABDA_signal - zb)/zsd;
-        if length(zfinal) < minArrayLen
+    for e = 1:height(session_identifiers(:,1))
+        e1 = session_identifiers(e,1)-baseWindow;
+        e2 = e1+timeWindow+baseWindow;
+        e3 = session_identifiers(e,1)-baseline(:,2);
+        e4 = session_identifiers(e,1)-baseline(:,1);
+        [~,ind1] = min(abs(time-e1));
+        [~,ind2] = min(abs(time-e2));
+        [~,ind3] = min(abs(time-e3));
+        [~,ind4] = min(abs(time-e4));
+        SIGNAL_meanBase = mean(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_std = std(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_window = SIGNAL_raw(1,ind1:ind2);
+        SIGNAL_dFF = SIGNAL_window - SIGNAL_meanBase;
+        SIGNAL_dFF = 100*(SIGNAL_dFF / SIGNAL_meanBase);
+        SIGNAL_time = time(1,ind1:ind2);
+        SIGNAL_z = (SIGNAL_window - SIGNAL_meanBase)/SIGNAL_std;
+        if length(SIGNAL_z) < epocArrayLen
             continue
         end
-        sessionSTREAM(e,:) = zfinal(1:minArrayLen);
-        sessionAMP(e,:) = max(zfinal);
-        sessionAUC(e,:) = trapz(GRABDA_time,zfinal);
+        sessionSTREAM(e,:) = SIGNAL_z(1:epocArrayLen);
+        sessionAMP(e,:) = max(SIGNAL_z);
+        sessionAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
     end
     for e = 1:height(cueTSA)
-            e1 = cueTSA(e,1)-baseline;
-            e2 = e1+timeWindow+baseline;
-            e3 = cueTSA(e,1)-baselineZ(:,2);
-            e4 = cueTSA(e,1)-baselineZ(:,1);
-            [c1,ind1] = min(abs(time1-e1));
-            [c2,ind2] = min(abs(time1-e2));
-            [c3,ind3] = min(abs(time1-e3));
-            [c4,ind4] = min(abs(time1-e4));
-            GRABDA_zBase = detrend_465(1,ind4:ind3);
-            GRABDA_signal = detrend_465(1,ind1:ind2);
-            GRABDA_time = time1(1,ind1:ind2);
-            zb = mean(GRABDA_zBase);
-            zsd = std(GRABDA_zBase);
-            zfinal = (GRABDA_signal - zb)/zsd;
-            if length(zfinal) < minArrayLen
-                break
-            end
-            cueSTREAM(e,:) = zfinal(1:minArrayLen);
-            cueAMP(e,:) = max(zfinal);
-            cueAUC(e,:) = trapz(GRABDA_time,zfinal);
+        e1 = cueTSA(e,1)-baseWindow;
+        e2 = e1+timeWindow+baseWindow;
+        e3 = cueTSA(e,1)-baseline(:,2);
+        e4 = cueTSA(e,1)-baseline(:,1);
+        [c1,ind1] = min(abs(time-e1));
+        [c2,ind2] = min(abs(time-e2));
+        [c3,ind3] = min(abs(time-e3));
+        [c4,ind4] = min(abs(time-e4));
+        SIGNAL_meanBase = mean(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_std = std(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_window = SIGNAL_raw(1,ind1:ind2);
+        SIGNAL_dFF = SIGNAL_window - SIGNAL_meanBase;
+        SIGNAL_dFF = 100*(SIGNAL_dFF / SIGNAL_meanBase);
+        SIGNAL_time = time(1,ind1:ind2);
+        SIGNAL_z = (SIGNAL_window - SIGNAL_meanBase)/SIGNAL_std;
+        if length(SIGNAL_z) < epocArrayLen
+            mn = mean(SIGNAL_z(1,end-10:end));
+            SIGNAL_z(1,end:epocArrayLen) = mn;
+        elseif length(SIGNAL_z) > epocArrayLen
+            op = length(SIGNAL_z);
+            arrayDif = op - epocArrayLen;
+            SIGNAL_z = SIGNAL_z(1,1:end-arrayDif);
+        end
+        cueSTREAM(e,:) = SIGNAL_z(1:epocArrayLen);
+        cueAMP(e,:) = max(SIGNAL_z);
+        % cueAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
     end
 else
     ISOS = 'x405C';
-    GRABDA = 'x465C';
+    SIGNAL = 'x465C';
     %time array used for all streams%
-    time1 = (1:length(data.streams.(GRABDA).data))/data.streams.(GRABDA).fs;
+    time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
     %removes the first (t) seconds where the data is wild due to turning on LEDs%
-    t = 0;% time threshold below which we will discard
-    ind = find(time1>t,1);% find first index of when time crosses threshold
-    time1 = time1(ind:end); % reformat vector to only include allowed time
-    data.streams.(GRABDA).data = data.streams.(GRABDA).data(ind:end);
+    ind = find(time>t,1);% find first index of when time crosses threshold
+    time = time(ind:end); % reformat vector to only include allowed time
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(ind:end);
     data.streams.(ISOS).data = data.streams.(ISOS).data(ind:end);
-    minLength = min(length(data.streams.(ISOS).data),length(data.streams.(GRABDA).data));
-    data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
-    data.streams.(GRABDA).data = data.streams.(GRABDA).data(1:minLength);
     
-    %downsample streams and time array by N times%
     data.streams.(ISOS).data = downsample(data.streams.(ISOS).data, N);
-    data.streams.(GRABDA).data = downsample(data.streams.(GRABDA).data, N);
-    time1 = downsample(time1, N);
-    ts1 = -baseline + (1:minArrayLen) / data.streams.(GRABDA).fs*N;
+    data.streams.(SIGNAL).data = downsample(data.streams.(SIGNAL).data, N);
+    minLength = min(length(data.streams.(ISOS).data),length(data.streams.(SIGNAL).data));
+    data.streams.(ISOS).data = data.streams.(ISOS).data(1:minLength);
+    data.streams.(SIGNAL).data = data.streams.(SIGNAL).data(1:minLength);
+    time = downsample(time, N);
+    ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(SIGNAL).fs*N;
     
+    ISOS_raw = data.streams.(ISOS).data;
+    SIGNAL_raw = data.streams.(SIGNAL).data;
+
     %detrend & dFF%
-    bls = polyfit(data.streams.(ISOS).data,data.streams.(GRABDA).data,1);
-    Y_fit_all = bls(1) .* data.streams.(ISOS).data + bls(2);
-    Y_dF_all = data.streams.(GRABDA).data - Y_fit_all; %dF (units mV) is not dFF
+    bls = polyfit(ISOS_raw,SIGNAL_raw,1);
+    Y_fit_all = bls(1) .* ISOS_raw + bls(2);
+    Y_dF_all = SIGNAL_raw - Y_fit_all; %dF (units mV) is not dFF
     dFF = 100*(Y_dF_all)./Y_fit_all;
     std_dFF = std(double(dFF));
-    detrend_465 = detrend(dFF);
-    z465 = zscore(data.streams.(GRABDA).data);
+    dFF = detrend(dFF);
+    z465 = zscore(dFF);
+
     cueTSC = data.epocs.St2_.onset;
     correct_rewardedC = data.epocs.cRewC.onset;
     correct_norewardC = data.epocs.cNoRewC.onset;
     incorrect_rewardedC = data.epocs.iRewC.onset;
     incorrect_norewardC = data.epocs.iNoRewC.onset;
-    [session_ts,trial_type,trial_name,lever_ts] = sessionArraySort(cueTSC,correct_rewardedC,...
+    [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cueTSC,correct_rewardedC,...
             correct_norewardC,incorrect_rewardedC,incorrect_norewardC);
     
-    for e = 1:height(session_ts)
-        e1 = session_ts(e,1)-baseline;
-        e2 = e1+timeWindow+baseline;
-        e3 = session_ts(e,1)-baselineZ(:,2);
-        e4 = session_ts(e,1)-baselineZ(:,1);
-        [~,ind1] = min(abs(time1-e1));
-        [~,ind2] = min(abs(time1-e2));
-        [~,ind3] = min(abs(time1-e3));
-        [~,ind4] = min(abs(time1-e4));
-        GRABDA_zBase = detrend_465(1,ind4:ind3);
-        GRABDA_signal = detrend_465(1,ind1:ind2);
-        GRABDA_time = time1(1,ind1:ind2);
-        zb = mean(GRABDA_zBase);
-        zsd = std(GRABDA_zBase);
-        zfinal = (GRABDA_signal - zb)/zsd;
-        if length(zfinal) < minArrayLen
+    for e = 1:height(session_identifiers(:,1))
+        e1 = session_identifiers(e,1)-baseWindow;
+        e2 = e1+timeWindow+baseWindow;
+        e3 = session_identifiers(e,1)-baseline(:,2);
+        e4 = session_identifiers(e,1)-baseline(:,1);
+        [~,ind1] = min(abs(time-e1));
+        [~,ind2] = min(abs(time-e2));
+        [~,ind3] = min(abs(time-e3));
+        [~,ind4] = min(abs(time-e4));
+        SIGNAL_meanBase = mean(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_std = std(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_window = SIGNAL_raw(1,ind1:ind2);
+        SIGNAL_dFF = SIGNAL_window - SIGNAL_meanBase;
+        SIGNAL_dFF = 100*(SIGNAL_dFF / SIGNAL_meanBase);
+        SIGNAL_time = time(1,ind1:ind2);
+        SIGNAL_z = (SIGNAL_window - SIGNAL_meanBase)/SIGNAL_std;
+        if length(SIGNAL_z) < epocArrayLen
             continue
         end
-        sessionSTREAM(e,:) = zfinal(1:minArrayLen);
-        sessionAMP(e,:) = max(zfinal);
-        sessionAUC(e,:) = trapz(GRABDA_time,zfinal);
+        sessionSTREAM(e,:) = SIGNAL_z(1:epocArrayLen);
+        sessionAMP(e,:) = max(SIGNAL_z);
+        sessionAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
     end
     for e = 1:height(cueTSC)
-        e1 = cueTSC(e,1)-baseline;
-        e2 = e1+timeWindow+baseline;
-        e3 = cueTSC(e,1)-baselineZ(:,2);
-        e4 = cueTSC(e,1)-baselineZ(:,1);
-        [c1,ind1] = min(abs(time1-e1));
-        [c2,ind2] = min(abs(time1-e2));
-        [c3,ind3] = min(abs(time1-e3));
-        [c4,ind4] = min(abs(time1-e4));
-        GRABDA_zBase = detrend_465(1,ind4:ind3);
-        GRABDA_signal = detrend_465(1,ind1:ind2);
-        GRABDA_time = time1(1,ind1:ind2);
-        zb = mean(GRABDA_zBase);
-        zsd = std(GRABDA_zBase);
-        zfinal = (GRABDA_signal - zb)/zsd;
-        if length(zfinal) < minArrayLen
-            break
-        end
-        cueSTREAM(e,:) = zfinal(1:minArrayLen);
-        cueAMP(e,:) = max(zfinal);
-        cueAUC(e,:) = trapz(GRABDA_time,zfinal);
+        e1 = cueTSC(e,1)-baseWindow;
+        e2 = e1+timeWindow+baseWindow;
+        e3 = cueTSC(e,1)-baseline(:,2);
+        e4 = cueTSC(e,1)-baseline(:,1);
+        [c1,ind1] = min(abs(time-e1));
+        [c2,ind2] = min(abs(time-e2));
+        [c3,ind3] = min(abs(time-e3));
+        [c4,ind4] = min(abs(time-e4));
+        SIGNAL_meanBase = mean(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_std = std(SIGNAL_raw(1,ind4:ind3));
+        SIGNAL_window = SIGNAL_raw(1,ind1:ind2);
+        SIGNAL_dFF = SIGNAL_window - SIGNAL_meanBase;
+        SIGNAL_dFF = 100*(SIGNAL_dFF / SIGNAL_meanBase);
+        SIGNAL_time = time(1,ind1:ind2);
+        SIGNAL_z = (SIGNAL_window - SIGNAL_meanBase)/SIGNAL_std;
+        % if length(SIGNAL_z) < epocArrayLen
+        %     break
+        % end
+        cueSTREAM(e,:) = SIGNAL_z(1:epocArrayLen);
+        cueAMP(e,:) = max(SIGNAL_z);
+        cueAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
     end
 end
 % Generate a colormap for the heatmap
 myColorMap = turbo;
 % Set a master font size
 myFontSize = 14;
-session_time = ts1(:,1:minArrayLen);
+session_time = ts1(:,1:epocArrayLen);
 % Define the number of signals and time steps
 numSignals = size(cueSTREAM, 1);
 
@@ -225,7 +238,7 @@ for i = 0:numSignals-1
 end
 
 % Set the x-axis limits and label
-xlim([session_time(:,1) session_time(:,minArrayLen)]);
+xlim([session_time(:,1) session_time(:,epocArrayLen)]);
 xlabel('Time (s)','FontSize',myFontSize+2);
 xline(0,'LineWidth',2,'Color','black')
 % Set the y-axis limits and label
@@ -242,7 +255,7 @@ title(name,'FontSize',myFontSize+3);
 subplot(1,2,2);
 
 signals = cueSTREAM; 
-x_values = lever_ts; 
+x_values = session_identifiers(2:2:end,1); 
 
 % Define the time array
 timeArray = session_time;
@@ -255,7 +268,7 @@ colormap(myColorMap);
 
 % Add a colorbar to the heatmap
 colorbar('FontSize',myFontSize);
-caxis([zMin, zMax]);
+clim([zMin, zMax]);
 % Loop through each row of signals
 % Get the y-limits and y-axis unit size of the heatmap
 ylims = ylim;
