@@ -1,4 +1,4 @@
-function [session_identifiers,lever_session_ts,trial_number,trial_name,lever_latency] = sessionArraySort(...
+function [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(...
     CUETTL,TTL1,TTL2,TTL3,TTL4)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This function is designed to extract and sort all TTL events in order
@@ -38,7 +38,7 @@ function [session_identifiers,lever_session_ts,trial_number,trial_name,lever_lat
     
     cue_lever_ts(:,1) = CUETTL;
    
-    lever_session_ts(2,:) = [];
+    % lever_session_ts(2,:) = [];
     
     if size(cue_lever_ts,1) > size(lever_session_ts,1)
         cue_lever_ts = cue_lever_ts(1:size(lever_session_ts,1), :);
@@ -47,13 +47,13 @@ function [session_identifiers,lever_session_ts,trial_number,trial_name,lever_lat
     end
 
     cue_lever_ts(:,2) = lever_session_ts;
-    lever_latency = cue_lever_ts(:,2) - cue_lever_ts(:,1);
+    % lever_latency = cue_lever_ts(:,1) - cue_lever_ts(:,2);
     % Initialize the new cell array with the same size as the original column
     trial_name = cell(size(trial_number));
-    
+    trial_outcome = trial_number(2:2:end,1);
     % Loop through the original column and replace each number with the corresponding string
-    for i = 1:length(trial_number)
-        switch trial_number(i)
+    for i = 1:length(trial_outcome)
+        switch trial_outcome(i)
             case 1
                 trial_name{i} = ['C+ Trial ' num2str(i)];
             case 2
