@@ -1,0 +1,2 @@
+TANKPATH = '/Volumes/OLIVER/248M_Train_JZL8_298F_Acq1_mPFC';
+data = TDTbin2mat(TANKPATH);

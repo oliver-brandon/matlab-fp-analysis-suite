@@ -67,12 +67,12 @@ for i = 1:numFiles
                 treatmentA = char(brokenID{3});
                 
                 matchA = regexp(animalIDA, '^[a-zA-Z]{2}','match');
-                if ~isempty(matchA)
-                    animalIDA = animalIDA(3:end);
-                else
-                    idxA = isletter(animalIDA);
-                    animalIDA(idxA) = regexprep(animalIDA(idxA), '[a-zA-Z]', '');
-                end
+                % if ~isempty(matchA)
+                %     animalIDA = animalIDA(3:end);
+                % else
+                %     idxA = isletter(animalIDA);
+                %     animalIDA(idxA) = regexprep(animalIDA(idxA), '[a-zA-Z]', '');
+                % end
                 
                 newfilenameA = strcat(animalIDA,'_',taskA,'_',treatmentA,'.mat');
                 file_pathnameA = fullfile(savDir,newfilenameA);
@@ -104,12 +104,12 @@ for i = 1:numFiles
                 taskC = char(brokenID{5});
                 treatmentC = char(brokenID{6});
                 matchC = regexp(animalIDC, '^[a-zA-Z]{2}','match');
-                if ~isempty(matchC)
-                    animalIDC = animalIDC(3:end);
-                else
-                    idxC = isletter(animalIDC);
-                    animalIDA(idxC) = regexprep(animalIDC(idxC), '[a-zA-Z]', '');
-                end
+                % if ~isempty(matchC)
+                %     animalIDC = animalIDC(3:end);
+                % else
+                %     idxC = isletter(animalIDC);
+                %     animalIDA(idxC) = regexprep(animalIDC(idxC), '[a-zA-Z]', '');
+                % end
                 newfilenameC = strcat(animalIDC,'_',taskC,'_',treatmentC,'.mat');
                 file_pathnameC = fullfile(savDir,newfilenameC);
                 if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does

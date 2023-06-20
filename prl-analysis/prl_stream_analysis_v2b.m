@@ -14,7 +14,7 @@ epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 toPlot = 0; % 1 = plot figures, 0 = don't plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('E:\Google Drive\My Drive\prl\PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('/Users/brandon/Library/CloudStorage/GoogleDrive-boliv018@ucr.edu/My Drive/prl/PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -264,7 +264,7 @@ for i = 1:numFiles
         stdCueBase_dFF = std(levers_dFF(n,baseSt:baseEn));
         levers_z(n,1:epocArrayLen) = (levers_dFF(n,1:epocArrayLen) - meanCueBase_dFF) / stdCueBase_dFF;
         amp_cueBase(n,1) = max(levers_z(n,ampSt:ampEn));
-        auc_cueBase(n,1) = trapz(ts1(1,aucSt:aucEn));
+        auc_cueBase(n,1) = trapz(ts1(1,aucSt:aucEn),levers_z(n,aucSt:aucEn));
     end
 %     firstLever(i,1:epocArrayLen) = levers_z(1,:);
 %     lastLever(i,1:epocArrayLen) = levers_z(end,:);
@@ -787,12 +787,13 @@ prl_stream_analysis.acq2.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.
 prl_stream_analysis.rev1.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev1'),:);
 prl_stream_analysis.rev2.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev2'),:);
 prl_stream_analysis.rev3.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Rev3'),:);
-
+prl_stream_analysis.acq1.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Acq1'),:);
 prl_stream_analysis.acq2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Acq2'),:);
 prl_stream_analysis.rev1.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev1'),:);
 prl_stream_analysis.rev2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev2'),:);
 prl_stream_analysis.rev3.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev3'),:);
 
+save('../data-files/prl_stream_analysis.mat','prl_stream_analysis')
 toc
 
 disp("Successfully analyzed .mat files")

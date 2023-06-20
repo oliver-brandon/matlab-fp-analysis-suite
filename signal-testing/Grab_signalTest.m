@@ -9,11 +9,11 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Name = 'GrabDA4.4'; % example: 'GrabDA4.4'
-t = 5; % first t seconds are discarded to remove LED on artifact
+Grab_Name = 'GrabNE3.1'; % example: 'GrabDA4.4'
+t = 10; % first t seconds are discarded to remove LED on artifact
 N = 1; % downsample signal N times
-ISOS = 'x405C'; % set name of isosbestic signal
-Grab = 'x465C'; % set name of Grab signal
+ISOS = 'x405A'; % set name of isosbestic signal
+Grab = 'x465A'; % set name of Grab signal
 x = 60; % start of window (s)
 y = 90; % end of window (s)
 fontSize = 8; % font size for figure ylabels
@@ -21,7 +21,7 @@ fontSize = 8; % font size for figure ylabels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Users/brandon/_Lab/signalTest_tanks', 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/Library/CloudStorage/GoogleDrive-boliv018@ucr.edu/My Drive/signalTest_tanks', 'Select a tank to plot');
 figsavepath = strcat(TANK_NAME,'/');
 [~,name,~] = fileparts(TANK_NAME);
 TITLE = strrep(name,'_',' ');
