@@ -16,7 +16,8 @@ VERSION = "1.0";
 % (even if one of the streams is empty). Run the script and a UI window 
 % will appear asking you to choose a folder containing one or more TDT 
 % fiber photometry tanks (if plotting one tank, you still need to place 
-% the tank in an empty folder). 
+% the tank in an empty folder). The tanks need to have the following naming
+% convention: Box#_IDA_Task_Day_Box#_IDB_Task_Day
 
 %%%% returns %%%%
 % Saves images of the average signal (+/- SEM) aligned to an epoc of choice

@@ -30,13 +30,13 @@ baselineZ_lever = [3 1];
 N = 1; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/Library/CloudStorage/GoogleDrive-boliv018@ucr.edu/My Drive/prl/PRL_GRABDA/testFigs/';
+figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/testFigs/';
 savetype = '.pdf';
-VERSION = '2.0';
+VERSION = 'v2';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more files"); 
-fprintf("prl_epoc_plotsaver Version: %s\n",VERSION)
+fprintf("prl_epoc_plotsaver %s\n",VERSION)
 tic
 if myDir == 0
     disp("Select a folder containing one or more files")
@@ -135,7 +135,7 @@ for batch = 1:numFiles
     % end
     % 
     [epocSTREAM,~,~] = epocExtract( ...
-        z465, ...
+        detrend_465, ...
         time, ...
         cueTS, ...
         baseline, ...
@@ -317,12 +317,13 @@ for batch = 1:numFiles
                 mkdir(savepath);
             end
             print(fig{i}, file_name, '-dpdf', '-bestfit');
-            % saveas(fig{i},file_name)
+            close
         else
             continue
         end
     end
     
 end
+close all
 toc
 NERD_STATS(toc,numFiles);

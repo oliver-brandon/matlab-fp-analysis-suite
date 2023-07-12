@@ -1,16 +1,16 @@
 clear all; clc; close all;
 
-BLOCKPATH = '/Users/brandon/_Lab/signalTest_tanks/GrabNE/epocTest/254M_NE2h_mPFC_264F_NE2h_mPFC';
+BLOCKPATH = '/Volumes/CUDADRIVE/BACKUPS/PRL_GRABDA/newCohortTanks/NE4M_A1_N-lOFC_NE7F_A1_N-lOFC';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
-STREAM_STORE1 = 'x405C';
-STREAM_STORE2 = 'x465C';
+STREAM_STORE1 = 'x405A';
+STREAM_STORE2 = 'x465A';
 % box_number = 3;
 
-REF_EPOC = 'St2/'; % Stimulation event to center on
+REF_EPOC = 'St1/'; % Stimulation event to center on
 
-TRANGE = [-2 10]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
-BASELINE_PER = [-5 -1]; % baseline period before stim
+BASELINE_PER = [-3 -1]; % baseline period before stim
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 

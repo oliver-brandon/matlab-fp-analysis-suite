@@ -40,6 +40,13 @@ for i = 1:numFiles
 
 
     if isfield(data.streams, 'x405A')
+        cue = data.epocs.St1_.onset;
+        cRew = data.epocs.cRewA.onset;
+        cNoRew = data.epocs.cNoRewA.onset;
+        iRew = data.epocs.iRewA.onset;
+        iNoRew = data.epocs.iNoRewA.onset;
+        [session_identifiers,lever_session_ts,trial_number,trial_name] = ...
+            sessionArraySort(cue,cRew,cNoRew,iRew,iNoRew);
         if ~isfield(data.epocs, 'CL1_')
             correct = 0;
         else
@@ -51,6 +58,13 @@ for i = 1:numFiles
             incorrect = height(data.epocs.IL1_.onset);
         end
     elseif isfield(data.streams, 'x405C')
+        cue = data.epocs.St2_.onset;
+        cRew = data.epocs.cRewC.onset;
+        cNoRew = data.epocs.cNoRewC.onset;
+        iRew = data.epocs.iRewC.onset;
+        iNoRew = data.epocs.iNoRewC.onset;
+        [session_identifiers,lever_session_ts,trial_number,trial_name] = ...
+            sessionArraySort(cue,cRew,cNoRew,iRew,iNoRew);
         if ~isfield(data.epocs, 'CL2_')
             correct = 0;
         else

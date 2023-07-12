@@ -5,7 +5,7 @@ warning off
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore
-amp_window = [0 2]; % time window to grab amplitude from
+amp_window = [0 5]; % time window to grab amplitude from
 auc_window = [-1 timeWindow];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
@@ -14,7 +14,9 @@ epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 toPlot = 0; % 1 = plot figures, 0 = don't plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('/Users/brandon/Library/CloudStorage/GoogleDrive-boliv018@ucr.edu/My Drive/prl/PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir(...
+    pwd,'Choose the .mat files you want to analyze.'...
+    ); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -264,7 +266,7 @@ for i = 1:numFiles
         stdCueBase_dFF = std(levers_dFF(n,baseSt:baseEn));
         levers_z(n,1:epocArrayLen) = (levers_dFF(n,1:epocArrayLen) - meanCueBase_dFF) / stdCueBase_dFF;
         amp_cueBase(n,1) = max(levers_z(n,ampSt:ampEn));
-        auc_cueBase(n,1) = trapz(ts1(1,aucSt:aucEn),levers_z(n,aucSt:aucEn));
+        auc_cueBase(n,1) = abs(trapz(ts1(1,aucSt:aucEn),levers_z(n,aucSt:aucEn)));
     end
 %     firstLever(i,1:epocArrayLen) = levers_z(1,:);
 %     lastLever(i,1:epocArrayLen) = levers_z(end,:);
@@ -561,15 +563,22 @@ auc_cueBase_table = cell2table(auc_cueBase_analysis,'VariableNames',{'Cue','cRew
 auc_cueBase_table = horzcat(idList,treatList,phaseList,auc_cueBase_table);
 %% Epoc Stream Tables Baselined to Cue %%
 a_cue_STREAMz = array2table(master_cue_STREAMz);
-a_cue_STREAMz = horzcat(idList,a_cue_STREAMz);
+a_cue_STREAMz = horzcat(idList,phaseList,treatList,a_cue_STREAMz);
 a_cRew_cueBase_STREAMz = array2table(master_cRew_cueBase_STREAMz);
-a_cRew_cueBase_STREAMz = horzcat(idList,a_cRew_cueBase_STREAMz);
+a_cRew_cueBase_STREAMz = horzcat(idList,phaseList,treatList,a_cRew_cueBase_STREAMz);
 a_cNoRew_cueBase_STREAMz = array2table(master_cNoRew_cueBase_STREAMz);
-a_cNoRew_cueBase_STREAMz = horzcat(idList,a_cNoRew_cueBase_STREAMz);
+a_cNoRew_cueBase_STREAMz = horzcat(idList,phaseList,treatList,a_cNoRew_cueBase_STREAMz);
 a_iRew_cueBase_STREAMz = array2table(master_iRew_cueBase_STREAMz);
-a_iRew_cueBase_STREAMz = horzcat(idList,a_iRew_cueBase_STREAMz);
+a_iRew_cueBase_STREAMz = horzcat(idList,phaseList,treatList,a_iRew_cueBase_STREAMz);
 a_iNoRew_cueBase_STREAMz = array2table(master_iNoRew_cueBase_STREAMz);
-a_iNoRew_cueBase_STREAMz = horzcat(idList,a_iNoRew_cueBase_STREAMz);
+a_iNoRew_cueBase_STREAMz = horzcat(idList,phaseList,treatList,a_iNoRew_cueBase_STREAMz);
+
+a_cue_STREAMz = sortrows(a_cue_STREAMz,{'Phase','Treatment'},{'ascend','descend'});
+a_cRew_cueBase_STREAMz = sortrows(a_cRew_cueBase_STREAMz,{'Phase','Treatment'},{'ascend','descend'});
+a_cNoRew_cueBase_STREAMz = sortrows(a_cNoRew_cueBase_STREAMz,{'Phase','Treatment'},{'ascend','descend'});
+a_iRew_cueBase_STREAMz = sortrows(a_iRew_cueBase_STREAMz,{'Phase','Treatment'},{'ascend','descend'});
+a_iNoRew_cueBase_STREAMz = sortrows(a_iNoRew_cueBase_STREAMz,{'Phase','Treatment'},{'ascend','descend'});
+
 
 if toPlot == 1
     %% Plots for each epoc %%
@@ -792,6 +801,38 @@ prl_stream_analysis.acq2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,
 prl_stream_analysis.rev1.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev1'),:);
 prl_stream_analysis.rev2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev2'),:);
 prl_stream_analysis.rev3.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev3'),:);
+
+prl_stream_analysis.acq1.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Acq1'),:);
+prl_stream_analysis.acq1.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Acq1'),:);
+prl_stream_analysis.acq1.cNoRew = a_cNoRew_cueBase_STREAMz(strcmp(a_cNoRew_cueBase_STREAMz.Phase,'Acq1'),:);
+prl_stream_analysis.acq1.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STREAMz.Phase,'Acq1'),:);
+prl_stream_analysis.acq1.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Acq1'),:);
+
+prl_stream_analysis.acq2.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.cNoRew = a_cNoRew_cueBase_STREAMz(strcmp(a_cNoRew_cueBase_STREAMz.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STREAMz.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Acq2'),:);
+
+prl_stream_analysis.rev1.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.cNoRew = a_cNoRew_cueBase_STREAMz(strcmp(a_cNoRew_cueBase_STREAMz.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STREAMz.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Rev1'),:);
+
+prl_stream_analysis.rev2.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Rev2'),:);
+prl_stream_analysis.rev2.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Rev2'),:);
+prl_stream_analysis.rev2.cNoRew = a_cNoRew_cueBase_STREAMz(strcmp(a_cNoRew_cueBase_STREAMz.Phase,'Rev2'),:);
+prl_stream_analysis.rev2.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STREAMz.Phase,'Rev2'),:);
+prl_stream_analysis.rev2.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Rev2'),:);
+
+prl_stream_analysis.rev3.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Rev3'),:);
+prl_stream_analysis.rev3.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Rev3'),:);
+prl_stream_analysis.rev3.cNoRew = a_cNoRew_cueBase_STREAMz(strcmp(a_cNoRew_cueBase_STREAMz.Phase,'Rev3'),:);
+prl_stream_analysis.rev3.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STREAMz.Phase,'Rev3'),:);
+prl_stream_analysis.rev3.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Rev3'),:);
+
+prl_stream_analysis.info.time = ts1;
 
 save('../data-files/prl_stream_analysis.mat','prl_stream_analysis')
 toc
