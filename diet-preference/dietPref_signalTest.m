@@ -13,7 +13,7 @@ warning off;
 % If only one animal was recorded, then the file should have the following
 % naming convention: 12F_V_Empty_NA_SDWD if stream C is empty, or 
 % Empty_NA_34M_A_SDWD if stream A is empty.
-VERSION = 'v1.0';
+VERSION = 'v2.0';
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 GRAB_Sensor = 'GrabDA';
@@ -25,6 +25,7 @@ experimentLogic = {'VC', 'Lox'}; % Ignores tanks not including these
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf("dietPref_signalTest Version: %s\n",VERSION)
+disp('|---------------\---------------|')
 myDir = uigetdir(pwd,"Select a folder containing one or more tanks"); 
 if myDir == 0
     disp("Select a folder containing one or more tanks")
@@ -128,7 +129,7 @@ for batch = 1:numFiles
         ISOS_dFF_z = zscore(ISOS_dFF);
         
         f1 = figure('Visible','off');
-        
+         
         subplot(3,1,1)
         title(TITLE,"FontSize",12)
         yyaxis left
@@ -207,6 +208,7 @@ for batch = 1:numFiles
         print(f1,file_name1,'-dpdf','-bestfit');
         close(f1)
         disp('Done.')
+        disp('|---------------\---------------|')
     end
     catch ex
         fprintf('Encountered an error with file %d\n',name)
