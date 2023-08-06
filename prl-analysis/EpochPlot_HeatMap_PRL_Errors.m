@@ -13,8 +13,11 @@ STREAM_STORE2 = 'x465A';
 errorType = 1; % 1 = winStay, 2 = winShift, 3 = loseStay, 4 = loseShift
 lever = 1; % 1 = correct lever, 2 = incorrect lever
 
+% choose which epocs to grab 1 = box 3/5, 2 = box 4/6
+TTL = 1;
+
 % creates trial type epocs using TTLs within the tank
-data = prl_df_epocs(data,1);
+data = prl_df_epocs(data,TTL);
 
 % sets up epoc variables created from prl_df_epocs function
 cue = data.epocs.St1_.onset;
