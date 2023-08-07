@@ -4,8 +4,8 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-3 -1]; % baseline signal for dFF/zscore
-amp_window = [0 5]; % time window to grab amplitude from
+baseline = [-3 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
+amp_window = [0 timeWindow]; % time window to grab amplitude from
 auc_window = [-1 timeWindow];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
@@ -112,7 +112,7 @@ for i = 1:numFiles
 
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
-        epocList = {cue;cRew;cNoRew;iRew;iNoRew};
+        epocList = {cue;cRew;cNoRew;iRew;iNoRew;session_identifiers};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
             iRewSTREAMraw;iNoRewSTREAMraw};
         outputSTREAMSdFF = {cueSTREAMdFF;cRewSTREAMdFF;cNoRewSTREAMdFF;...
@@ -180,7 +180,7 @@ for i = 1:numFiles
 
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
-        epocList = {cue;cRew;cNoRew;iRew;iNoRew};
+        epocList = {cue;cRew;cNoRew;iRew;iNoRew;session_identifiers};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
             iRewSTREAMraw;iNoRewSTREAMraw};
         outputSTREAMSdFF = {cueSTREAMdFF;cRewSTREAMdFF;cNoRewSTREAMdFF;...
@@ -210,12 +210,13 @@ for i = 1:numFiles
     
     session_time = downsample(session_time, N);
     ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(SIGNAL).fs*N;
-    [~,baseSt] = min(abs(ts1 - baseline(1)));
-    [~,baseEn] = min(abs(ts1 - baseline(2)));
-    [~,ampSt] = min(abs(ts1 - amp_window(1)));
-    [~,ampEn] = min(abs(ts1 - amp_window(2)));
-    [~,aucSt] = min(abs(ts1 - auc_window(1)));
-    [~,aucEn] = min(abs(ts1 - auc_window(2)));
+    % establish baseline windows
+    [~,baseSt] = min(abs(ts1 - (baseline(1))));
+    [~,baseEn] = min(abs(ts1 - (baseline(2))));
+    [~,ampSt] = min(abs(ts1 - (amp_window(1))));
+    [~,ampEn] = min(abs(ts1 - (amp_window(2))));
+    [~,aucSt] = min(abs(ts1 - (auc_window(1))));
+    [~,aucEn] = min(abs(ts1 - (auc_window(2))));
     
     %% Streams baselined to cue preceding it %%
     cueArray = session_identifiers(1:2:end,:);
@@ -225,7 +226,7 @@ for i = 1:numFiles
     end
     leverArray = session_identifiers(2:2:end,:);
     levers_z = zeros(height(leverArray),epocArrayLen);
-    lever_raw = zeros(height(leverArray),epocArrayLen);
+    levers_raw = zeros(height(leverArray),epocArrayLen);
     for m = 1:height(leverArray)
         
         cueBase1 = cueArray(m,1) - 3;
@@ -248,18 +249,18 @@ for i = 1:numFiles
             arrayDif = op - epocArrayLen;
             leverSigRaw = leverSigRaw(1,1:end-arrayDif);
         end
-        lever_raw(m,:) = leverSigRaw;
+        levers_raw(m,:) = leverSigRaw;
                 
     end
-    sessionSTREAMSraw{i,1} = lever_raw;
+    sessionSTREAMSraw{i,1} = levers_raw;
     amp_cueBase = [];
     auc_cueBase = [];
-    for n = 1:height(lever_raw)
+    for n = 1:height(levers_raw)
         % dF/F
         meanCue = cueBaseMean(n,1);
         stdCue = cueBaseStd(n,1);
         
-        levers_dFF(n,1:epocArrayLen) = lever_raw(n, 1:epocArrayLen) - meanCue;
+        levers_dFF(n,1:epocArrayLen) = levers_raw(n, 1:epocArrayLen) - meanCue;
         levers_dFF(n,1:epocArrayLen) = 100*(levers_dFF(n,1:epocArrayLen) / meanCue);
         % z-Score
         meanCueBase_dFF = mean(levers_dFF(n,baseSt:baseEn));
@@ -454,8 +455,8 @@ for i = 1:numFiles
 
         end
 
-        [~,baseSt] = min(abs(ts1 - baseline(1)));
-        [~,baseEn] = min(abs(ts1 - baseline(2)));
+        [~,baseSt] = min(abs(ts1 - (baseline(1))));
+        [~,baseEn] = min(abs(ts1 - (baseline(2))));
 
         for j = 1:height(streams_raw)
             % dF/F
