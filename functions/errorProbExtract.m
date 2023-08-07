@@ -121,33 +121,57 @@ elseif errorType == 2
     % lever TTLs
     data.epocs.WIN_shift_LEV.name = 'WIN_shift_LEV';
     data.epocs.WIN_shift_LEV.onset = errorProbLeverTS(:,1);
+    data.epocs.WIN_shift_LEV.offset = errorProbLeverTS(:,1) + 1;
+    data.epocs.WIN_shift_LEV.data = ones(height(errorProbLeverTS(:,1))) * 9;
     data.epocs.win_SHIFT_LEV.name = 'win_SHIFT_LEV';
     data.epocs.win_SHIFT_LEV.onset = errorProbLeverTS(:,2);
+    data.epocs.win_SHIFT_LEV.offset = errorProbLeverTS(:,2) + 1;
+    data.epocs.win_SHIFT_LEV.data = ones(height(errorProbLeverTS(:,2))) * 10;
     % cue TTLs
     data.epocs.WIN_shift_CUE.name = 'WIN_shift_CUE';
     data.epocs.WIN_shift_CUE.onset = errorProbCueTS(:,1);
+    data.epocs.WIN_shift_CUE.offset = errorProbCueTS(:,1) + 1;
+    data.epocs.WIN_shift_CUE.data = ones(height(errorProbCueTS(:,1))) * 11;
     data.epocs.win_SHIFT_CUE.name = 'win_SHIFT_CUE';
     data.epocs.win_SHIFT_CUE.onset = errorProbCueTS(:,2);
+    data.epocs.win_SHIFT_CUE.offset = errorProbCueTS(:,2) + 1;
+    data.epocs.win_SHIFT_CUE.data = ones(height(errorProbCueTS(:,2))) * 12;
 elseif errorType == 3
     % lever TTLs
     data.epocs.LOS_stay_LEV.name = 'LOS_stay_LEV';
     data.epocs.LOS_stay_LEV.onset = errorProbLeverTS(:,1);
+    data.epocs.LOS_stay_LEV.offset = errorProbLeverTS(:,1) + 1;
+    data.epocs.LOS_stay_LEV.data = ones(height(errorProbLeverTS(:,1))) * 13;
     data.epocs.los_STAY_LEV.name = 'los_STAY_LEV';
     data.epocs.los_STAY_LEV.onset = errorProbLeverTS(:,2);
+    data.epocs.los_STAY_LEV.offset = errorProbLeverTS(:,2) + 1;
+    data.epocs.los_STAY_LEV.data = ones(height(errorProbLeverTS(:,2))) * 14;
     % cue TTLs
     data.epocs.LOS_stay_CUE.name = 'LOS_stay_CUE';
     data.epocs.LOS_stay_CUE.onset = errorProbCueTS(:,1);
+    data.epocs.LOS_stay_CUE.offset = errorProbCueTS(:,1) + 1;
+    data.epocs.LOS_stay_CUE.data = ones(height(errorProbCueTS(:,1))) * 15;
     data.epocs.los_STAY_CUE.name = 'los_STAY_CUE';
     data.epocs.los_STAY_CUE.onset = errorProbCueTS(:,2);
+    data.epocs.los_STAY_CUE.offset = errorProbCueTS(:,2) + 1;
+    data.epocs.los_STAY_CUE.data = ones(height(errorProbCueTS(:,2))) * 16;
 elseif errorType == 4
     % lever TTLs
     data.epocs.LOS_shift_LEV.name = 'LOS_shift_LEV';
     data.epocs.LOS_shift_LEV.onset = errorProbLeverTS(:,1);
+    data.epocs.LOS_shift_LEV.offset = errorProbLeverTS(:,1) + 1;
+    data.epocs.LOS_shift_LEV.data = ones(height(errorProbLeverTS(:,1))) * 17;
     data.epocs.los_SHIFT_LEV.name = 'los_SHIFT_LEV';
     data.epocs.los_SHIFT_LEV.onset = errorProbLeverTS(:,2);
+    data.epocs.los_SHIFT_LEV.onset = errorProbLeverTS(:,2) + 1;
+    data.epocs.los_SHIFT_LEV.data = ones(height(errorProbLeverTS(:,2))) * 18;
     % cue TTLs
     data.epocs.LOS_shift_CUE.name = 'LOS_shift_CUE';
     data.epocs.LOS_shift_CUE.onset = errorProbCueTS(:,1);
+    data.epocs.LOS_shift_CUE.offset = errorProbCueTS(:,1) + 1;
+    data.epocs.LOS_shift_CUE.data = ones(height(errorProbCueTS(:,1))) * 19;
     data.epocs.los_SHIFT_CUE.name = 'los_SHIFT_CUE';
     data.epocs.los_SHIFT_CUE.onset = errorProbCueTS(:,2);
+    data.epocs.los_SHIFT_CUE.offset = errorProbCueTS(:,2) + 1;
+    data.epocs.los_SHIFT_CUE.data = ones(height(errorProbCueTS(:,2))) * 20;
 end
