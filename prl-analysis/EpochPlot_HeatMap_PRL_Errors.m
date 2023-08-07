@@ -3,10 +3,11 @@
 % "errorProbExtract.m" to be in the MATLAB path.
 clear all; clc; close all;
 
-BLOCKPATH = 'E:\Google Drive\prl\dual_fiber\tanks\74MUL_Acq5_NA_Empty_NA_NA';
+BLOCKPATH = '/Users/brandon/My Drive/prl/PRL_GRABDA/test/234F_Acq1_JZL8.mat';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 STREAM_STORE1 = 'x405A';
 STREAM_STORE2 = 'x465A';
+REF_EPOC = 'WIN_stay_CUE'; % Stimulation event to center on
 
 % edit errorType and lever variables to change the extracted error types
 % and levers
@@ -19,26 +20,32 @@ TTL = 1;
 % creates trial type epocs using TTLs within the tank
 data = prl_df_epocs(data,TTL);
 
-% sets up epoc variables created from prl_df_epocs function
-cue = data.epocs.St1_.onset;
-cRew = data.epocs.cRewA.onset;
-cNoRew = data.epocs.cNoRewA.onset;
-iRew = data.epocs.iRewA.onset;
-iNoRew = data.epocs.iNoRewA.onset;
-
-% sorts epocs in order of occurance using sessionArraySort function
-[session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(...
-    cue, cRew, cNoRew, iRew, iNoRew);
-% extracts epocs for error types and creates epocs
-[data, errorProbLeverTS, errorProbCueTS] = errorProbExtract(data, session_identifiers, errorType, lever);
-
-REF_EPOC = 'WIN_stay_CUE'; % Stimulation event to center on
 
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
 BASELINE_PER = [-3 -1]; % baseline period before stim
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
+% sets up epoc variables created from prl_df_epocs function
+if TTL == 1
+    cue = data.epocs.St1_.onset;
+    cRew = data.epocs.cRewA.onset;
+    cNoRew = data.epocs.cNoRewA.onset;
+    iRew = data.epocs.iRewA.onset;
+    iNoRew = data.epocs.iNoRewA.onset;
+elseif TTL == 2
+    cue = data.epocs.St2_.onset;
+    cRew = data.epocs.cRewC.onset;
+    cNoRew = data.epocs.cNoRewC.onset;
+    iRew = data.epocs.iRewC.onset;
+    iNoRew = data.epocs.iNoRewC.onset;
+end
+
+% sorts epocs in order of occurance using sessionArraySort function
+[session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(...
+    cue, cRew, cNoRew, iRew, iNoRew);
+% extracts epocs for error types and creates epocs
+[data, errorProbLeverTS, errorProbCueTS] = errorProbExtract(data, session_identifiers, errorType, lever);
 
 
 % Use TDTfilter to extract data around our epoc event
