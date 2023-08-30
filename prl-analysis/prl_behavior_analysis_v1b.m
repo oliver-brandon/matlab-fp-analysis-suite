@@ -20,7 +20,8 @@ IDs = cell(numFiles, 1);
 phaseList = cell(numFiles, 1);
 treatList = cell(numFiles, 1);
 percentCorrect = zeros(numFiles, 1);
-
+perseveration = [];
+errorProbability = [];
 for i = 1:numFiles
     filepath = fullfile(dataDir, dataFiles(i).name);
     try
@@ -65,6 +66,9 @@ for i = 1:numFiles
         iNoRew = data.epocs.iNoRewC.onset;
         [session_identifiers,lever_session_ts,trial_number,trial_name] = ...
             sessionArraySort(cue,cRew,cNoRew,iRew,iNoRew);
+        if session_identifiers(1,2) == 0 && session_identifiers(2,2) == 0
+            session_identifiers = session_identifiers(2:end,:);
+        end
         if ~isfield(data.epocs, 'CL2_')
             correct = 0;
         else
@@ -83,6 +87,20 @@ for i = 1:numFiles
         percentCorrect(i,1) = correct/numTrials;
     end
     data.behavior.perCor = percentCorrect(i,1);
+    %% Perseveration %%
+    [totPersev] = prlPerseveration(session_identifiers);
+    perseveration(end+1,1) = totPersev(1,1);
+    %% Error Probability %%
+    [data, errorProbLeverTS, errorProbCueTS] = errorProbExtract(...
+    data,...
+    session_identifiers, ...
+    1, ...
+    1 ...
+    );
+    errorProbability(end+1,1) = height(errorProbLeverTS) / sum(session_identifiers(:,2) == 1);
+    %%
+
+
 
 end
 IDs = cell2table(IDs,'VariableNames',{'ID/Sex'});
@@ -91,6 +109,13 @@ treatList = cell2table(treatList,'VariableNames',{'Treatment'});
 percentCorrect = array2table(percentCorrect,'VariableNames',{'Percent Correct'});
 percentCorrect = horzcat(IDs,phaseList,treatList,percentCorrect);
 percentCorrect = sortrows(percentCorrect,{'Phase','Treatment'},{'ascend','descend'});
+perseveration = array2table(perseveration,'VariableNames',{'Total Perseveration'});
+perseveration = horzcat(IDs,phaseList,treatList,perseveration);
+perseveration = sortrows(perseveration,{'Phase','Treatment','ID/Sex'},{'ascend','descend','ascend'});
+errorProbability = array2table(errorProbability,'VariableNames',{'p(error)'});
+errorProbability = horzcat(IDs,phaseList,treatList,errorProbability);
+errorProbability = sortrows(errorProbability,{'Phase','Treatment','ID/Sex'},{'ascend','descend','ascend'});
+
 prl_behavior.acq1 = percentCorrect(strcmp(percentCorrect.Phase,'Acq1'), :);
 prl_behavior.acq2 = percentCorrect(strcmp(percentCorrect.Phase,'Acq2'), :);
 prl_behavior.rev1 = percentCorrect(strcmp(percentCorrect.Phase,'Rev1'), :);

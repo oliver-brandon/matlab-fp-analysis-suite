@@ -3,7 +3,7 @@
 % "errorProbExtract.m" to be in the MATLAB path.
 clear all; clc; close all;
 
-BLOCKPATH = '/Users/brandon/My Drive/prl/PRL_GRABDA/test/234F_Acq1_JZL8.mat';
+BLOCKPATH = '/Users/brandon/My Drive/prl/dual_fiber/tanks/Empty_NA_NA_76MUL_Acq4_NA';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 STREAM_STORE1 = 'x405A';
 STREAM_STORE2 = 'x465A';
@@ -15,7 +15,7 @@ errorType = 1; % 1 = winStay, 2 = winShift, 3 = loseStay, 4 = loseShift
 lever = 1; % 1 = correct lever, 2 = incorrect lever
 
 % choose which epocs to grab 1 = box 3/5, 2 = box 4/6
-TTL = 1;
+TTL = 2;
 
 % creates trial type epocs using TTLs within the tank
 data = prl_df_epocs(data,TTL);

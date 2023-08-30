@@ -10,22 +10,23 @@ VERSION = 'v2.0';
 % by changing the value of 'N' below.
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dual_fiber = 1; % 0 = no, single fiber. 1 = dual_fiber
+dual_fiber = 0; % 0 = no, single fiber. 1 = dual_fiber
 df_TTL = 1; % 1 = TTL1/A. 2 = TTL2/B 
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Sensor = 'GrabDA2m'; % example: 'GrabDA4.4'
-ROI = 'NAcc';
-t = 30; % first t seconds are discarded to remove LED on artifact
-N = 1; % downsample signal N times
+Grab_Sensor = 'GrabNE3.1'; % example: 'GrabDA4.4'
+ROI = 'lOFC';
+t = 60; % first t seconds are discarded to remove LED on artifact
+N = 100; % downsample signal N times
 ISOS = 'x405A'; % set name of isosbestic signal
 Grab = 'x465A'; % set name of Grab signal
 fontSize = 8; % font size for figure ylabels
 figureSize = [100,100,600,800]; % Set the desired figure size
+figSnip = [3000, 3030];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Grab_signalTest %s\n',VERSION)
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Volumes/CUDADRIVE', 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/My Drive/self_admin/food_sa/Tanks/Cortical NE-DA/FR1-6 Discrete Cue-Lever-Reward', 'Select a tank to plot');
 if TANK_NAME == 0
     disp('Select a file to start!')
     return
@@ -37,7 +38,7 @@ brokenID = strsplit(name,'_');
 if strcmp(ISOS,'x405A')
     ID = brokenID(1);
 elseif strcmp(ISOS,'x405C')
-    ID = brokenID(4);
+    ID = brokenID(3);
 else
     disp('Cannot find isosbestic signal. Check the naming and try again.')
 end
@@ -50,7 +51,7 @@ else
     disp('')
 end
 TITLE = strcat(ID,{' '},Grab_Sensor,{' '},ROI);
-data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams'});
+data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams','epocs'});
 ISOS_raw = data.streams.(ISOS).data;
 Grab_raw = data.streams.(Grab).data;
 
@@ -123,7 +124,7 @@ ylim2 = max(ISOS_raw)*(1.01);
 ylim([ylim1,ylim2])
 set(gca,'YColor','black','Box', 'on','Color','w')
 set(get(gca, 'YLabel'), 'Rotation', -90, 'Color','black') % Rotate the right ylabel
-f1a = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','best');
+f1a = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','northeast');
 f1a.FontSize = fontSize;
 
 
@@ -147,7 +148,7 @@ ylim2 = max(ISOS_dFF)*(2.1);
 ylim([ylim1,ylim2])
 set(gca,'YColor','black','Box', 'on','Color','w')
 set(get(gca, 'YLabel'), 'Rotation', -90, 'Color','black') % Rotate the right ylabel
-f1b = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','best');
+f1b = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','northeast');
 f1b.FontSize = fontSize;
 
 subplot(3,1,3)
@@ -171,11 +172,84 @@ ylim2 = max(ISOS_dFF_z)*(2.1);
 ylim([ylim1,ylim2])
 set(gca,'YColor','black','Box', 'on','Color','w')
 set(get(gca, 'YLabel'), 'Rotation', -90, 'Color','black') % Rotate the right ylabel
-f1c = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','best');
+f1c = legend(sprintf('%s (465nm)',Grab_Sensor), 'Isosbestic (405nm)','Orientation','horizontal','Location','northeast');
 f1c.FontSize = fontSize;
 
 
 
 file_name1 = char(strcat(figsavepath,TITLE,' fig1',figsavetype));
 print(f1,file_name1,'-dpdf','-vector','-bestfit');
+
+% peakDist = 0.2;
+% ind = find(time>data.epocs.coc_.onset(1,1),1);
+% ind2 = find(time>120,1);
+% ind2end = find(time>240,1);
+% ind3 = find(time>420,1);
+% ind3end = find(time>540,1);
+% 
+% 
+% MAD1 = mad(Grab_dFF_z(1,1:ind), 1);
+% MAD2 = mad(Grab_dFF_z(1,ind:end),1);
+% [pks,locs,w,p] = findpeaks(Grab_dFF_z(1,1:ind), time(1,1:ind), 'MinPeakHeight', MAD1,...
+%             "MinPeakDistance", peakDist);
+% [pks2,locs2,w2,p2] = findpeaks(Grab_dFF_z(1,ind:end), time(1,ind:end), 'MinPeakHeight', MAD2,...
+%             "MinPeakDistance", peakDist);
+% 
+% b4cocpks = length(pks);
+% b4cocpks_m = (b4cocpks/time(1,end))*60;
+% aftrcocpks = length(pks2);
+% aftrcocpks_m = (aftrcocpks/time(1,end))*60;
+% 
+% pkanalysis = table(b4cocpks,aftrcocpks,b4cocpks_m,aftrcocpks_m,'VariableNames',{'NumPeaks Before Coc', 'NumPeaks After Coc', ...
+%     'Peaks/m Before Coc', 'Peaks/m After Coc'});
+% 
+% f2 = figure;
+% subplot(4,1,1)
+% plot(time,ISOS_raw, 'r')
+% xlim([t floor(time(1,end))])
+% ylabel('Isosbestic Uncorrected (mV)','FontSize',fontSize)
+% subplot(4,1,2)
+% plot(time,Grab_raw,'b')
+% xlim([t floor(time(1,end))])
+% ylabel('GrabDA Uncorrected (mV)','FontSize',fontSize)
+% subplot(4,1,3)
+% plot(time,ISOS_dFF_z,'r')
+% xlim([t floor(time(1,end))])
+% ylabel('Isosbestic \DeltaF/F_{0} (z-Score)','FontSize',fontSize,'Interpreter','tex')
+% subplot(4,1,4)
+% plot(time,Grab_dFF_z,'b')
+% title(sprintf('Peaks/m Before Cocaine: %.2f, After Cocaine: %.2f',b4cocpks_m,aftrcocpks_m))
+% xline(data.epocs.coc_.onset(1,1),'-red', 'Infusion','LineWidth',2,'FontSize',16)
+% xlim([t floor(time(1,end))])
+% ylabel('GrabDA \DeltaF/F_{0} (z-Score)','FontSize',fontSize,'Interpreter','tex')
+% xlabel('Time (s)')
+% 
+% f3 = figure;
+% subplot(2,1,1)
+% plot(time(1,ind2:ind2end),Grab_dFF_z(1,ind2:ind2end))
+% title('Before Cocaine (2 mins)')
+% xlim([floor(time(1,ind2)) floor(time(1,ind2end))])
+% ylim([-4,6])
+% ylabel('GrabDA \DeltaF/F_{0} (z-Score)','FontSize',fontSize,'Interpreter','tex')
+% xlabel('Time (s)')
+% subplot(2,1,2)
+% plot(time(1,ind3:ind3end), Grab_dFF_z(1,ind3:ind3end))
+% title('After Cocaine (2 min)')
+% xlim([floor(time(1,ind3)) floor(time(1,ind3end))])
+% ylim([-4,6])
+% ylabel('GrabDA \DeltaF/F_{0} (z-Score)','FontSize',fontSize,'Interpreter','tex')
+% xlabel('Time (s)')
+
+idx = find(time>figSnip(1),1);
+idx2 = find(time>figSnip(2),1);
+timeSnip = time(1, idx:idx2);
+grabSnip = Grab_dFF_z(1, idx:idx2);
+ts1 = 0 + (1:length(grabSnip)) / data.streams.(Grab).fs*N;
+f4 = figure;
+plot(timeSnip,grabSnip, 'Color', 'b')
+ylabel('GrabDA \DeltaF/F_{0} (z-Score)','Interpreter','tex')
+xlabel('Time (s)')
+title(TITLE)
+subtitle(sprintf('%d Second Window', (figSnip(2)-figSnip(1))))
+xlim([figSnip(1),figSnip(2)])
 disp('Done.')

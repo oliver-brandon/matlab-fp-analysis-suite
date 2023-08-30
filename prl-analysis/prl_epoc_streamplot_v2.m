@@ -30,7 +30,7 @@ baselineZ_lever = [3 1];
 N = 1; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/testFigs/';
+figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/epocFigs/';
 savetype = '.pdf';
 VERSION = 'v2';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

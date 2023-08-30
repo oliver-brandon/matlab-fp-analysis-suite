@@ -37,6 +37,7 @@ elseif lever == 2
     shift1 = 1;
     shift2 = 2;
 end
+
 if errorType == 1
     % Loop through rows of trial_type
     for i = 4:2:size(session_identifiers,1)

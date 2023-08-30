@@ -26,12 +26,24 @@ function [session_identifiers,lever_session_ts,trial_number,trial_name] = sessio
     session_identifiers = [combined_array1 combined_array2];
     % Sort the first column of newArray in ascending order
     session_identifiers = sortrows(session_identifiers, 1);
-    % removes lever ts preceding missing second cue ts
-    session_identifiers = [session_identifiers(1:2,:);session_identifiers(4:end,:)];
     % Find the rows in A where the first column is not zero
     idx = session_identifiers(:,1) ~= 0;
     % Use logical indexing to remove rows with zero values
     session_identifiers = session_identifiers(idx,:);
+
+    if session_identifiers(3,2) ~= 0
+         % removes lever ts preceding missing second cue ts
+         session_identifiers = [session_identifiers(1:2,:);session_identifiers(4:end,:)];
+         disp('missing second cue')
+    elseif session_identifiers(1,2) == 0 && session_identifiers(2,2) == 0
+        session_identifiers = session_identifiers(2:end,:);
+        disp('missing second lever press')
+    elseif session_identifiers(2,2) == 0 && session_identifiers(end,2) == 0
+        session_identifiers = session_identifiers(3:end-1,:);
+        disp('missing last lever press')
+    end
+
+
     
     lever_session_ts = session_identifiers(:,1);
     trial_number = session_identifiers(:,2);

@@ -8,7 +8,7 @@
 %SA_Epoc_PlotSaver.m created by Brandon L. Oliver, M.A., adapted
 %from Barker et al. (2017)
 clear; clc; close all;
-VERSION = "1.0";
+VERSION = "1.1";
 
 %%%% how to use %%%%
 % set the variable below named "figure_savepath" to your desired figure
@@ -17,7 +17,7 @@ VERSION = "1.0";
 % will appear asking you to choose a folder containing one or more TDT 
 % fiber photometry tanks (if plotting one tank, you still need to place 
 % the tank in an empty folder). The tanks need to have the following naming
-% convention: Box#_IDA_Task_Day_Box#_IDB_Task_Day
+% convention: IDA_Task-Day_IDB_TaskDay
 
 %%%% returns %%%%
 % Saves images of the average signal (+/- SEM) aligned to an epoc of choice
@@ -26,11 +26,15 @@ VERSION = "1.0";
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% edit these variables %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure_savepath = '/Volumes/CUDADRIVE/DA_FOOD/Food_SA/Epoc_Figs/'; % include backslash at end of path
+figure_savepath = '/Users/brandon/My Drive/self_admin/iv_sa/Figs/'; % include forward slash at end of path
 epoc = {'aRw/','bRw/'};
-EPOCNAME = 'Reward Delivery';
-% epoc = {'IL1/','IL2/'};
+% epoc = {'aRL/','bRL/'};
+% epoc = {'aHL/','bHL/'};
+EPOCNAME = 'Cocaine Infusion';
 savetype = ".pdf";
+TRANGE = [-4 14]; %window size [start time relative to epoc onset, entire duration]
+BASELINE_PER = [-3 -1]; % baseline period before stim
+N = 10; % Downsample Nx
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more tanks"); 
 fprintf("SA_Epoc_PlotSaver Version: %s\n",VERSION)
@@ -56,10 +60,10 @@ for batch = 1:length(myFiles)
     [~,name,~] = fileparts(BLOCKPATH);
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
-    animalIDA = char(brokenID{2});
-    animalIDC = char(brokenID{5});
-    taskA = char(brokenID{3});
-    taskC = char(brokenID{6});
+    animalIDA = char(brokenID{1});
+    animalIDC = char(brokenID{3});
+    taskA = char(brokenID{2});
+    taskC = char(brokenID{4});
     for streamAorC = 1:2
         if streamAorC == 1
             emptylogicA = strcmp(animalIDA,emptyID);
@@ -81,8 +85,6 @@ for batch = 1:length(myFiles)
         end
         data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
         REF_EPOC = char(epoc(streamAorC));
-        TRANGE = [-2 12]; %window size [start time relative to epoc onset, entire duration]
-        BASELINE_PER = [-5 -1]; % baseline period before stim
         ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
         ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
         if streamAorC == 1
@@ -144,8 +146,7 @@ for batch = 1:length(myFiles)
         
         allSignals = cell2mat(data.streams.(STREAM_STORE1).filtered');
         
-        % downsample 10x and average 405 signal
-        N = 10;
+        % downsample and average 405 signal
         F405 = zeros(size(allSignals(:,1:N:end-N+1)));
         for ii = 1:size(allSignals,1)
             F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);

@@ -112,7 +112,7 @@ for i = 1:numFiles
 
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
-        epocList = {cue;cRew;cNoRew;iRew;iNoRew;session_identifiers};
+        epocList = {cue;cRew;cNoRew;iRew;iNoRew};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
             iRewSTREAMraw;iNoRewSTREAMraw};
         outputSTREAMSdFF = {cueSTREAMdFF;cRewSTREAMdFF;cNoRewSTREAMdFF;...
@@ -180,7 +180,7 @@ for i = 1:numFiles
 
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
-        epocList = {cue;cRew;cNoRew;iRew;iNoRew;session_identifiers};
+        epocList = {cue;cRew;cNoRew;iRew;iNoRew};
         outputSTREAMSraw = {cueSTREAMraw;cRewSTREAMraw;cNoRewSTREAMraw;...
             iRewSTREAMraw;iNoRewSTREAMraw};
         outputSTREAMSdFF = {cueSTREAMdFF;cRewSTREAMdFF;cNoRewSTREAMdFF;...
@@ -295,16 +295,6 @@ for i = 1:numFiles
 
         amp_cRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
         auc_cRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
-    elseif height(cRew_cueBase) == 1
-        firstcRew(i,1:epocArrayLen) = cRew_cueBase(1,:);
-        firstcRew_AMP(i,1) = max(cRew_cueBase(1,ampSt:ampEn));
-        firstcRew_AUC(i,1) = trapz(ts1(1,aucSt:aucEn),cRew_cueBase(1,aucSt:aucEn));
-        lastcRew(i,1:epocArrayLen) = nan;
-        lastcRew_AMP(i,1) = nan;
-        lastcRew_AUC(i,1) = nan;
-
-        amp_cRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
-        auc_cRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
     elseif isempty(cRew_cueBase)
         firstcRew(i,1:epocArrayLen) = nan;
         firstcRew_AMP(i,1) = nan;
@@ -413,7 +403,7 @@ for i = 1:numFiles
         auc_iNoRew_cueBase = nan;
     end
 
-    leverLatencies(i,1) = mean(leverArray(:,1) - cueArray(:,1));
+    % leverLatencies(i,1) = mean(leverArray(:,1) - cueArray(:,1));
 %     data.analysis.levers_z = levers_z;
 
     %% Streams baslined to before each epoc %%
@@ -835,7 +825,7 @@ prl_stream_analysis.rev3.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBa
 
 prl_stream_analysis.info.time = ts1;
 
-save('../data-files/prl_stream_analysis.mat','prl_stream_analysis')
+% save('../data-files/prl_stream_analysis.mat','prl_stream_analysis')
 toc
 
 disp("Successfully analyzed .mat files")

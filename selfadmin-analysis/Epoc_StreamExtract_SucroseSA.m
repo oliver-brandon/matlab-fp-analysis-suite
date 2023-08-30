@@ -4,10 +4,10 @@
 % Add data
 clear all; clc; close all;
 tanks2analyze = 2; % 1=batch, 2=single
-streamAorC = 2; % 1=465A, 2=465C
-epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
-
-
+streamAorC = 1; % 1=465A, 2=465C
+% epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
+epoc = {'aHL/','bHL/'};
+% epoc = {'aRw/','bRw/'};
 
 
 if tanks2analyze == 1
@@ -19,7 +19,7 @@ if tanks2analyze == 1
     epoc_stream_store = cell(numFiles);
     disp("Starting batch tank extract...")
 elseif tanks2analyze == 2
-    myDir = uigetdir;
+    myDir = uigetdir('/Users/brandon/My Drive/self_admin/food_sa/Tanks/Cortical NE-DA/FR1-6 Discrete Cue-Lever-Reward');
     numFiles = 1;
     epoc_stream_store = cell(numFiles);
     disp("Starting single tank extract...")
@@ -34,7 +34,7 @@ for batch = 1:numFiles
     [~,name,~] = fileparts(BLOCKPATH);
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
-    animalIDA = char(brokenID{2});
+    animalIDA = char(brokenID{1});
     if streamAorC == 1
         emptylogicA = strcmp(animalIDA,emptyID);
         if emptylogicA == 1
@@ -44,7 +44,7 @@ for batch = 1:numFiles
             disp('')
         end
     end
-    animalIDC = char(brokenID{5});
+    animalIDC = char(brokenID{3});
     if streamAorC == 2
         emptylogicC = strcmp(animalIDC,emptyID);
         if emptylogicC == 1
@@ -56,8 +56,8 @@ for batch = 1:numFiles
     end
     data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
     REF_EPOC = char(epoc(streamAorC));
-    TRANGE = [-2 12]; %window size [start time relative to epoc onset, entire duration]
-    BASELINE_PER = [-5 -1]; % baseline period before stim
+    TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
+    BASELINE_PER = [-3 -1]; % baseline period before stim
     ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
     ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
     if streamAorC == 1
@@ -135,11 +135,27 @@ for batch = 1:numFiles
     % Subtract DC offset to get signals on top of one another
     meanSignal1 = meanSignal1 - dcSignal1;
     meanSignal2 = meanSignal2 - dcSignal2;
+
+    bls = polyfit(F465(1:end), F405(1:end), 1);
+    Y_fit_all = bls(1) .* F405 + bls(2);
+    Y_dF_all = F465 - Y_fit_all;
+    
+    zall = zeros(size(Y_dF_all));
+    for i = 1:size(Y_dF_all,1)
+        ind = ts2(1,:) < BASELINE_PER(2) & ts2(1,:) > BASELINE_PER(1);
+        zb = mean(Y_dF_all(i,ind)); % baseline period mean (-10sec to -6sec)
+        zsd = std(Y_dF_all(i,ind)); % baseline period stdev
+        zall(i,:)=(Y_dF_all(i,:) - zb)/zsd; % Z score per bin
+    end
+
     if tanks2analyze == 1
-        epoc_stream_store{batch} = F465;
+        epoc_stream_store{batch} = zall;
     elseif tanks2analyze == 2
-        epoc_stream_store = F465;
+        epoc_stream_store = zall;
     end
        
 end
+
+
+
 fprintf("Finished extracting epocs from %d tanks...\n",numFiles)
