@@ -30,17 +30,20 @@ function [session_identifiers,lever_session_ts,trial_number,trial_name] = sessio
     idx = session_identifiers(:,1) ~= 0;
     % Use logical indexing to remove rows with zero values
     session_identifiers = session_identifiers(idx,:);
-
-    if session_identifiers(3,2) ~= 0
+    if session_identifiers(1,2) ~= 0
+        session_identifiers = session_identifiers(2:end,:);
+        % disp('missing first cue and third lever')
+    elseif session_identifiers(3,2) ~= 0
          % removes lever ts preceding missing second cue ts
          session_identifiers = [session_identifiers(1:2,:);session_identifiers(4:end,:)];
-         disp('missing second cue')
+         % disp('missing second cue')
     elseif session_identifiers(1,2) == 0 && session_identifiers(2,2) == 0
         session_identifiers = session_identifiers(2:end,:);
-        disp('missing second lever press')
+        % disp('missing second lever press')
     elseif session_identifiers(2,2) == 0 && session_identifiers(end,2) == 0
         session_identifiers = session_identifiers(3:end-1,:);
-        disp('missing last lever press')
+        % disp('missing last lever press')
+
     end
 
 
