@@ -13,20 +13,20 @@ VERSION = 'v2.0';
 dual_fiber = 0; % 0 = no, single fiber. 1 = dual_fiber
 df_TTL = 1; % 1 = TTL1/A. 2 = TTL2/B 
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Sensor = 'GrabNE3.1'; % example: 'GrabDA4.4'
-ROI = 'lOFC';
-t = 60; % first t seconds are discarded to remove LED on artifact
+Grab_Sensor = 'GrabDA4.4'; % example: 'GrabDA4.4'
+ROI = 'NAc';
+t = 90; % first t seconds are discarded to remove LED on artifact
 N = 100; % downsample signal N times
 ISOS = 'x405A'; % set name of isosbestic signal
 Grab = 'x465A'; % set name of Grab signal
 fontSize = 8; % font size for figure ylabels
-figureSize = [100,100,600,800]; % Set the desired figure size
-figSnip = [3000, 3030];
+figureSize = [100,100,1500,800]; % Set the desired figure size
+figSnip = [1000, 1120];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Grab_signalTest %s\n',VERSION)
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Users/brandon/My Drive/self_admin/food_sa/Tanks/Cortical NE-DA/FR1-6 Discrete Cue-Lever-Reward', 'Select a tank to plot');
+TANK_NAME = uigetdir('E:\Google Drive\self_admin\food_sa\Tanks\Cortical NE-DA\FR1-6 Discrete Cue-Lever-Reward', 'Select a tank to plot');
 if TANK_NAME == 0
     disp('Select a file to start!')
     return
@@ -246,6 +246,7 @@ timeSnip = time(1, idx:idx2);
 grabSnip = Grab_dFF_z(1, idx:idx2);
 ts1 = 0 + (1:length(grabSnip)) / data.streams.(Grab).fs*N;
 f4 = figure;
+set(f4,'Position',[800,550,1200,420]);
 plot(timeSnip,grabSnip, 'Color', 'b')
 ylabel('GrabDA \DeltaF/F_{0} (z-Score)','Interpreter','tex')
 xlabel('Time (s)')

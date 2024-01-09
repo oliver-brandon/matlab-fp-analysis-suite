@@ -1,4 +1,4 @@
-function [epocSTREAM,epocAMP,epocAUC] = epocExtract( ...
+function [epocSTREAM] = epocExtract( ...
     sessionSignal, ...
     sessionTime,...
     TTLarray, ...
@@ -10,19 +10,14 @@ function [epocSTREAM,epocAMP,epocAUC] = epocExtract( ...
     ts1...
     )
 
-% epocSTREAM = [];
-% epocAMP = [];
-% epocAUC = [];
+streams_z = [];
 epoc = TTLarray;
 idx = find(ts1>-0.5,1);
 for ii = 1:height(epoc)
-    % if epoc(ii) == 0 || isempty(epoc)
-    %     epocSTREAM(ii,1:minArrayLen) = NaN;
-    %     epocAMP(ii) = NaN;
-    %     epocAUC(ii) = NaN;
-    %     break
-    % end
-    
+    if epoc(ii) == 0
+        streams_raw(ii,1:minArrayLen) = NaN;
+        break
+    end
     windowStart = epoc(ii)-preEpochWindow;
     windowEnd = windowStart+preEpochWindow+epocWindow;
     [~,windSt] = min(abs(sessionTime - windowStart));
@@ -41,9 +36,11 @@ for ii = 1:height(epoc)
 end
 [~,baseSt] = min(abs(ts1 - (zBaseWindow(1))));
 [~,baseEn] = min(abs(ts1 - (zBaseWindow(2))));
-[~,ampSt] = min(abs(ts1 - (ampWindow(1))));
-[~,ampEn] = min(abs(ts1 - (ampWindow(2))));
+
 for j = 1:height(streams_raw)
+    if isnan(streams_raw)
+        streams_raw(1,1:minArrayLen) = NaN;
+    end
     % dF/F
     meanBase = mean(streams_raw(j,baseSt:baseEn));
     stdBase = std(streams_raw(j,baseSt:baseEn));
@@ -63,23 +60,6 @@ for j = 1:height(streams_raw)
         diff = 0 - val;
         streams_z(j,1:minArrayLen) = streams_z(j,1:minArrayLen) - abs(diff);
     end
-    
-    % amplitude
-    ampdFF(j) = max(streams_dFF(j,ampSt:ampEn));
-    ampZ(j) = max(streams_z(j,ampSt:ampEn));
 
-    % Calculate AUC above x=0 (dFF) %
-    positive_indices = streams_dFF(j,:) > 0;
-    y_pos = streams_dFF(j,positive_indices);
-    x_pos = ts1(1,positive_indices);
-    aucZ(j) = trapz(x_pos,y_pos);
-
-    % Calculate AUC above x=0 (dFF) %
-    positive_indices = streams_z(j,:) > 0;
-    y_pos = streams_z(j,positive_indices);
-    x_pos = ts1(1,positive_indices);
-    aucdFF(j) = trapz(x_pos,y_pos);
 end
 epocSTREAM = streams_z;
-epocAMP = ampZ;
-epocAUC = aucZ;

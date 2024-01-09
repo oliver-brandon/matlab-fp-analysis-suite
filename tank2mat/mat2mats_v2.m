@@ -19,14 +19,21 @@
 % Fill task/treatment fields with "NA"
 % For more instructions, check out the README.
 clear
-VERSION = "2.0";
+VERSION = "2.1";
 fprintf("VERSION: %s\n",VERSION)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dualFiber = 0; % 1 = dualFiber file, 0 = singleFiber file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 myDir = uigetdir('','Choose the mat file(s) you want to save.'); %gets directory%
+disp('Choose a folder containing one or more mat files to split.')
 if myDir == 0
     disp("Select a directory of mat files to start")
     return
 end
 savDir = uigetdir('','Choose where you want to save the separated mat file(s).'); %gets directory%
+disp('Choose a save location for the split mat files.')
 if savDir == 0
     disp("Select a valid save directory")
     return
@@ -49,82 +56,157 @@ for i = 1:numFiles
     emptylogicC = strcmp(animalIDC,emptyID);
     load(FILEPATH);
     data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
-    for subjects = 1:2
-        if subjects == 1
-            if emptylogicA == 1
-                disp("Stream A is empty")
-                totFiles = totFiles - 1;
-                continue
-            elseif emptylogicA == 0
-                data.streams = rmfield(data.streams, {'x405C','x465C'});
-                if isfield(data.epocs,'IL2_') == 1
-                    data.epocs = rmfield(data.epocs, {'Pe2_','St2_','IL2_'});
-                end
-                if isfield(data.epocs,'CL2_') == 1
-                    data.epocs = rmfield(data.epocs, {'CL2_'});
-                end
-                taskA = char(brokenID{2});
-                treatmentA = char(brokenID{3});
-                
-                matchA = regexp(animalIDA, '^[a-zA-Z]{2}','match');
-                % if ~isempty(matchA)
-                %     animalIDA = animalIDA(3:end);
-                % else
-                %     idxA = isletter(animalIDA);
-                %     animalIDA(idxA) = regexprep(animalIDA(idxA), '[a-zA-Z]', '');
-                % end
-                
-                newfilenameA = strcat(animalIDA,'_',taskA,'_',treatmentA,'.mat');
-                file_pathnameA = fullfile(savDir,newfilenameA);
-                if exist(file_pathnameA,"file") % checks if the file exists in savDir and skips if it does
-                    fprintf("%s already exists...skipping\n",newfilenameA)
+    if dualFiber == 1
+        for subjects = 1:2
+            if subjects == 1
+                if emptylogicA == 1
+                    disp("Stream A is empty")
                     totFiles = totFiles - 1;
                     continue
+                elseif emptylogicA == 0
+                    if isfield(data.epocs,'IL2_') == 1
+                        data.epocs = rmfield(data.epocs, {'Pe2_','St2_','IL2_'});
+                    end
+                    if isfield(data.epocs,'CL2_') == 1
+                        data.epocs = rmfield(data.epocs, {'CL2_'});
+                    end
+                    taskA = char(brokenID{2});
+                    treatmentA = char(brokenID{3});
+                    
+                    matchA = regexp(animalIDA, '^[a-zA-Z]{2}','match');
+                    % if ~isempty(matchA)
+                    %     animalIDA = animalIDA(3:end);
+                    % else
+                    %     idxA = isletter(animalIDA);
+                    %     animalIDA(idxA) = regexprep(animalIDA(idxA), '[a-zA-Z]', '');
+                    % end
+                    
+                    newfilenameA = strcat(animalIDA,'_',taskA,'_',treatmentA,'.mat');
+                    file_pathnameA = fullfile(savDir,newfilenameA);
+                    if exist(file_pathnameA,"file") % checks if the file exists in savDir and skips if it does
+                        fprintf("%s already exists...skipping\n",newfilenameA)
+                        totFiles = totFiles - 1;
+                        continue
+                    end
+                    disp("Saving stream A...")
+                    save(file_pathnameA,"data")
+                    disp("Done.")
+                    clear data
                 end
-                disp("Saving stream A...")
-                save(file_pathnameA,"data")
-                disp("Done.")
-                clear data
+            elseif subjects == 2
+                load(FILEPATH);
+                data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+                if emptylogicC == 1
+                    disp("Stream C is empty")
+                    totFiles = totFiles - 1;
+                    continue
+                elseif emptylogicC == 0
+                    if isfield(data.epocs,'IL1_') == 1
+                        data.epocs = rmfield(data.epocs, {'Pe1_','St1_','IL1_'});
+                    end
+                    if isfield(data.epocs,'CL1_') == 1
+                        data.epocs = rmfield(data.epocs, {'CL1_'});
+                    end
+                    taskC = char(brokenID{5});
+                    treatmentC = char(brokenID{6});
+                    matchC = regexp(animalIDC, '^[a-zA-Z]{2}','match');
+                    % if ~isempty(matchC)
+                    %     animalIDC = animalIDC(3:end);
+                    % else
+                    %     idxC = isletter(animalIDC);
+                    %     animalIDA(idxC) = regexprep(animalIDC(idxC), '[a-zA-Z]', '');
+                    % end
+                    newfilenameC = strcat(animalIDC,'_',taskC,'_',treatmentC,'.mat');
+                    file_pathnameC = fullfile(savDir,newfilenameC);
+                    if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does
+                        fprintf("%s already exists...skipping\n",newfilenameC)
+                        totFiles = totFiles - 1;
+                        continue
+                    end
+                    disp("Saving stream C...")
+                    save(file_pathnameC,"data")
+                    disp("Done.")
+                    clear data
+                end
             end
-        elseif subjects == 2
-            load(FILEPATH);
-            data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
-            if emptylogicC == 1
-                disp("Stream C is empty")
-                totFiles = totFiles - 1;
-                continue
-            elseif emptylogicC == 0
-                data.streams = rmfield(data.streams, {'x405A','x465A'});
-                if isfield(data.epocs,'IL1_') == 1
-                    data.epocs = rmfield(data.epocs, {'Pe1_','St1_','IL1_'});
-                end
-                if isfield(data.epocs,'CL1_') == 1
-                    data.epocs = rmfield(data.epocs, {'CL1_'});
-                end
-                taskC = char(brokenID{5});
-                treatmentC = char(brokenID{6});
-                matchC = regexp(animalIDC, '^[a-zA-Z]{2}','match');
-                % if ~isempty(matchC)
-                %     animalIDC = animalIDC(3:end);
-                % else
-                %     idxC = isletter(animalIDC);
-                %     animalIDA(idxC) = regexprep(animalIDC(idxC), '[a-zA-Z]', '');
-                % end
-                newfilenameC = strcat(animalIDC,'_',taskC,'_',treatmentC,'.mat');
-                file_pathnameC = fullfile(savDir,newfilenameC);
-                if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does
-                    fprintf("%s already exists...skipping\n",newfilenameC)
+        end
+    else
+        for subjects = 1:2
+            if subjects == 1
+                if emptylogicA == 1
+                    disp("Stream A is empty")
                     totFiles = totFiles - 1;
                     continue
+                elseif emptylogicA == 0
+                    data.streams = rmfield(data.streams, {'x405C','x465C'});
+                    if isfield(data.epocs,'IL2_') == 1
+                        data.epocs = rmfield(data.epocs, {'Pe2_','St2_','IL2_'});
+                    end
+                    if isfield(data.epocs,'CL2_') == 1
+                        data.epocs = rmfield(data.epocs, {'CL2_'});
+                    end
+                    taskA = char(brokenID{2});
+                    treatmentA = char(brokenID{3});
+                    
+                    matchA = regexp(animalIDA, '^[a-zA-Z]{2}','match');
+                    % if ~isempty(matchA)
+                    %     animalIDA = animalIDA(3:end);
+                    % else
+                    %     idxA = isletter(animalIDA);
+                    %     animalIDA(idxA) = regexprep(animalIDA(idxA), '[a-zA-Z]', '');
+                    % end
+                    
+                    newfilenameA = strcat(animalIDA,'_',taskA,'_',treatmentA,'.mat');
+                    file_pathnameA = fullfile(savDir,newfilenameA);
+                    if exist(file_pathnameA,"file") % checks if the file exists in savDir and skips if it does
+                        fprintf("%s already exists...skipping\n",newfilenameA)
+                        totFiles = totFiles - 1;
+                        continue
+                    end
+                    disp("Saving stream A...")
+                    save(file_pathnameA,"data")
+                    disp("Done.")
+                    clear data
                 end
-                disp("Saving stream C...")
-                save(file_pathnameC,"data")
-                disp("Done.")
-                clear data
+            elseif subjects == 2
+                load(FILEPATH);
+                data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+                if emptylogicC == 1
+                    disp("Stream C is empty")
+                    totFiles = totFiles - 1;
+                    continue
+                elseif emptylogicC == 0
+                    data.streams = rmfield(data.streams, {'x405A','x465A'});
+                    if isfield(data.epocs,'IL1_') == 1
+                        data.epocs = rmfield(data.epocs, {'Pe1_','St1_','IL1_'});
+                    end
+                    if isfield(data.epocs,'CL1_') == 1
+                        data.epocs = rmfield(data.epocs, {'CL1_'});
+                    end
+                    taskC = char(brokenID{5});
+                    treatmentC = char(brokenID{6});
+                    matchC = regexp(animalIDC, '^[a-zA-Z]{2}','match');
+                    % if ~isempty(matchC)
+                    %     animalIDC = animalIDC(3:end);
+                    % else
+                    %     idxC = isletter(animalIDC);
+                    %     animalIDA(idxC) = regexprep(animalIDC(idxC), '[a-zA-Z]', '');
+                    % end
+                    newfilenameC = strcat(animalIDC,'_',taskC,'_',treatmentC,'.mat');
+                    file_pathnameC = fullfile(savDir,newfilenameC);
+                    if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does
+                        fprintf("%s already exists...skipping\n",newfilenameC)
+                        totFiles = totFiles - 1;
+                        continue
+                    end
+                    disp("Saving stream C...")
+                    save(file_pathnameC,"data")
+                    disp("Done.")
+                    clear data
+                end
             end
         end
     end
-
 end
 disp("Successfully separated and saved streams to individual .mat files")
 fprintf("Files saved: %d\n",totFiles)

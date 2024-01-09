@@ -33,10 +33,10 @@ baselineZ_lever = [3 1];
 N = 1; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/testFigs/';% must include forward slash at end of path
+figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/epocFigs/';% must include forward slash at end of path
 savetype = '.pdf'; % can set to desired file type
-stream_A = 'mPFC';
-stream_C = 'lOFC';
+stream_A = 'DLS';
+stream_C = 'NAc';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more files"); 
@@ -559,7 +559,7 @@ for batch = 1:numFiles
             mkdir(savepath);
         end
         print(fig{i},file_name,'-dpdf','-bestfit');
-
+        close
         
     end
      

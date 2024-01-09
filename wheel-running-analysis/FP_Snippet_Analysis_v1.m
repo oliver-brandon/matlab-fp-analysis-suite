@@ -16,7 +16,7 @@ clear all; clc; close all;
 warning('off','all');
 
 %Choose batch or single tank analysis%
-tanks2analyze = 1;%1 = batch, 2 = single%
+tanks2analyze = 2;%1 = batch, 2 = single%
 %Choose zscore paramater%
 %1 = convert stream to zscore before snipping, 2 = convert snippets to
 %zscore (local zscore), 3 = choose your own zscore window

@@ -26,17 +26,23 @@ VERSION = "1.1";
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% edit these variables %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure_savepath = '/Users/brandon/My Drive/self_admin/iv_sa/Figs/'; % include forward slash at end of path
-epoc = {'aRw/','bRw/'};
-% epoc = {'aRL/','bRL/'};
+figure_savepath = 'H:\My Drive\self_admin\food_sa\Cortical NE-DA\IsosPlot\Figs\'; % include forward slash at end of path
+% epoc = {'aRw/','bRw/'};
+epoc = {'aRL/','bRL/'};
 % epoc = {'aHL/','bHL/'};
-EPOCNAME = 'Cocaine Infusion';
+% epoc = {'aReward','bReward'};
+% epoc = {'aActiveRew','bActiveRew'};
+% epoc = {'aActiveTimeout','bActiveTimeout'};
+% epoc = {'aRewTimeout','bRewTimeout'};
+EPOCNAME = 'Active Press + Reward';
 savetype = ".pdf";
-TRANGE = [-4 14]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-2 10]; %window size [start time relative to epoc onset, entire duration]
 BASELINE_PER = [-3 -1]; % baseline period before stim
 N = 10; % Downsample Nx
+addVertLine = 1; % 1 = yes, 0 = no
+vertLineX = 3; % if adding vertical line, specifies the x coord
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir(pwd,"Select a folder containing one or more tanks"); 
+myDir = uigetdir('H:\My Drive\self_admin\food_sa\Cortical NE-DA',"Select a folder containing one or more tanks"); 
 fprintf("SA_Epoc_PlotSaver Version: %s\n",VERSION)
 tic
 if myDir == 0
@@ -64,6 +70,7 @@ for batch = 1:length(myFiles)
     animalIDC = char(brokenID{3});
     taskA = char(brokenID{2});
     taskC = char(brokenID{4});
+    data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
     for streamAorC = 1:2
         if streamAorC == 1
             emptylogicA = strcmp(animalIDA,emptyID);
@@ -71,7 +78,12 @@ for batch = 1:length(myFiles)
                 disp("Stream A is empty")
                 continue
             elseif emptylogicA == 0
-                disp('')
+                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.aRL_.offset, 10);
+                [data] = createEpoc(data, rewardTimestamps, 'aActiveRew');
+                [data] = createEpoc(data, rewardTimeout, 'aRewTimeout');
+                [data] = createEpoc(data, timeoutTimestamps, 'aActiveTimeout');
+                [data] = createEpoc(data, data.epocs.aRw_.offset, 'aReward');
+
             end
         end
         if streamAorC == 2
@@ -80,10 +92,18 @@ for batch = 1:length(myFiles)
                 disp("Stream C is empty")
                 continue
             elseif emptylogicC == 0
-                disp('')
+                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.bRL_.offset, 10);
+                [data] = createEpoc(data, rewardTimestamps, 'bActiveRew');
+                [data] = createEpoc(data, rewardTimeout, 'bRewTimeout');
+                [data] = createEpoc(data, timeoutTimestamps, 'bActiveTimeout');
+                [data] = createEpoc(data, data.epocs.bRw_.offset, 'bReward');
             end
         end
-        data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
+        
+
+
+        
+
         REF_EPOC = char(epoc(streamAorC));
         ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
         ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
@@ -274,6 +294,9 @@ for batch = 1:length(myFiles)
         subplot(2,3,[1,2,4,5])
         plot(ts2, mean(zall), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
         line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+        if addVertLine == 1
+            line([vertLineX vertLineX], [min(YY*1.5), max(YY*1.5)], 'Color', [1 0 0], 'LineWidth', 2)
+        end
         
         h = fill(XX, YY, 'b');
         set(h, 'facealpha',.25,'edgecolor','none')
@@ -307,6 +330,7 @@ for batch = 1:length(myFiles)
         clf reset   
     end
 end
+close all
 if length(myFiles) > 1
     fprintf("Finished plotting and saving %d figures...\n",length(myFiles))
 elseif length(myFiles) == 1

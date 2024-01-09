@@ -5,19 +5,32 @@
 % by changing the value of 'N' below.
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figsavepath = 'Z:\'; % must include backslash at the end of the path
-figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-t = 5; % first t seconds are discarded to remove laser on artifact
-N = 1; % downsample signal N times
-ISOS = 'x405C'; % set name of isosbestic signal
-GCaMP = 'x465C'; % set name of GCaMP signal
+figsavepath = '/Users/brandon/My Drive (bloliv95@gmail.com)/self_admin/coc_sa/PrL-aIC/signal_test/figures/'; % must include backslash at the end of the path
+figsavetype = '.tif'; % can change to '.jpg', '.fig', etc.
+t = 30; % first t seconds are discarded to remove laser on artifact
+N = 10; % downsample signal N times
+position = 1; % 1 = mouse on A channel, 2 = mouse on C channel
+figSnip = [530, 590];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir(pwd, 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/My Drive (bloliv95@gmail.com)/self_admin/coc_sa/PrL-aIC/signal_test/tanks', 'Select a tank to plot');
 [~,name,~] = fileparts(TANK_NAME);
-TITLE = strrep(name,'_',' ');
+brokenID = strsplit(name,'_');
+if position == 1
+    ISOS = 'x405A'; % set name of isosbestic signal
+    GCaMP = 'x465A'; % set name of GCaMP signal
+    animalID = char(brokenID{1});
+    region = char(brokenID{2});
+elseif position == 2
+    ISOS = 'x405C'; % set name of isosbestic signal
+    GCaMP = 'x465C'; % set name of GCaMP signal
+    animalID = char(brokenID{3});
+    region = char(brokenID{4});
+end
+
+TITLE = strcat(animalID," ",region);
 data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams'});
 ISOS_raw = data.streams.(ISOS).data;
 GCaMP_raw = data.streams.(GCaMP).data;
@@ -58,29 +71,32 @@ Y_dF_all = GCaMP_raw - Y_fit_all; %dF (units mV) is not dFF
 GCaMP_dFF = 100*(Y_dF_all)./Y_fit_all;
 std_dFF = std(double(GCaMP_dFF));
 GCaMP_dFF_detrend = detrend(GCaMP_dFF);
+GCaMP_Z = zScore(GCaMP_dFF_detrend);
 
-ind1 = find(time > 55,1);
-ind2 = find(time > 65,1);
-GCaMP_snip = GCaMP_dFF_detrend(ind1:ind2);
+ind1 = find(time > figSnip(1),1);
+ind2 = find(time > figSnip(2),1);
+GCaMP_snip = GCaMP_Z(ind1:ind2);
 time_snip = time(ind1:ind2);
+
 % Creates figure of raw, dFF, and detrended dFF GCaMP signal
 f1 = figure;
 subplot(4,1,1)
-plot(time,GCaMP_raw,'g')
+plot(time,ISOS_raw,'r')
 title(TITLE)
-ylabel("Raw GCaMP6 (mV)")
+ylabel("Raw Isosbestic (mV)")
 subplot(4,1,2)
-plot(time,GCaMP_dFF,'g')
-ylabel("GCaMP6 (dFF)")
+plot(time,GCaMP_raw,'b')
+ylabel("GCaMP6f (mV)")
 subplot(4,1,3)
-plot(time,GCaMP_dFF_detrend,'g')
-ylabel('GCaMP6 Detrended (dFF)')
+plot(time,GCaMP_Z,'b')
+ylabel('Normalized GCaMP6f')
 subplot(4,1,4)
-plot(time_snip,GCaMP_snip,'g')
-title('10s Window')
-ylabel('GCaMP6 dFF')
+plot(time_snip,GCaMP_snip,'b')
+title(sprintf('%d Second Window', (figSnip(2)-figSnip(1))));
+ylabel('Normalized GCaMP6f')
 xlabel("Time (s)")
+xlim([figSnip(1) figSnip(2)]);
 
 % Saves figure as desired file type to user chosen directory
-file_name = strcat(figsavepath,name,figsavetype);
-saveas(f1,file_name)
+file_name = strcat(figsavepath,TITLE,figsavetype);
+saveas(f1,file_name,'tiff');

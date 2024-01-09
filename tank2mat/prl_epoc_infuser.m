@@ -16,12 +16,18 @@
 % directory with epocs from a given function (to a user selected directory).
 % For instructions, see "README"
 clear
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dualFiber = 0; % 1 = dualFiber file, 0 = singleFiber file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir('','Choose the mat file(s) you want to infuse.'); %gets directory%
+disp('Choose a folder containing one or more mat files that you wish to infuse with prl epochs.')
 if myDir == 0
     disp("Select a directory of mat files to start")
     return
 end
 savDir = uigetdir('','Choose where you want to save the infused mat file(s).'); %gets directory%
+disp('Choose a folder to save the infused mat files to.')
 if savDir == 0
     disp("Select a valid save directory")
     return
@@ -36,7 +42,18 @@ for i = 1:numFiles
 
     FILEPATH = fullfile(myDir,myFiles(i).name);
     load(FILEPATH);
-    data = prl_epocs(data);
+    if dualFiber == 0
+        data = prl_epocs(data);
+    else
+        if isfield(data.epocs,'St1_')
+            TTLs = 1;
+        elseif isfield(data.epocs,'St2_')
+            TTLs = 2;
+        else
+            disp('File is missing TTLs')
+        end
+        data = prl_df_epocs(data,TTLs);
+    end
     save(FILEPATH,"data")
     
 end

@@ -3,12 +3,20 @@
 % Clear workspace and close existing figures.
 % Add data
 clear all; clc; close all;
+FR = 5; % Fixed ratio
 tanks2analyze = 2; % 1=batch, 2=single
 streamAorC = 1; % 1=465A, 2=465C
-% epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
-epoc = {'aHL/','bHL/'};
-% epoc = {'aRw/','bRw/'};
+% epoc = {'aHL/','bHL/'};
 
+remove_infusion_np = 0; % 1 = remove infusion nosepokes
+remove_free_inf = 1; % 1 = remove nosepokes from free infusion at start
+epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
+TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
+BASELINE_PER = [-2 0]; % baseline period before stim
+% 
+% epoc = {'aRw/','bRw/'};
+% TRANGE = [-2 22]; %window size [start time relative to epoc onset, entire duration]
+% BASELINE_PER = [-2 0]; % baseline period before stim
 
 if tanks2analyze == 1
     myDir = uigetdir; %gets directory%
@@ -19,7 +27,7 @@ if tanks2analyze == 1
     epoc_stream_store = cell(numFiles);
     disp("Starting batch tank extract...")
 elseif tanks2analyze == 2
-    myDir = uigetdir('/Users/brandon/My Drive/self_admin/food_sa/Tanks/Cortical NE-DA/FR1-6 Discrete Cue-Lever-Reward');
+    myDir = uigetdir('/Volumes/CUDADRIVE/unprocessedTanks');
     numFiles = 1;
     epoc_stream_store = cell(numFiles);
     disp("Starting single tank extract...")
@@ -35,6 +43,7 @@ for batch = 1:numFiles
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
     animalIDA = char(brokenID{1});
+    taskA = char(brokenID{2});
     if streamAorC == 1
         emptylogicA = strcmp(animalIDA,emptyID);
         if emptylogicA == 1
@@ -56,8 +65,29 @@ for batch = 1:numFiles
     end
     data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
     REF_EPOC = char(epoc(streamAorC));
-    TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
-    BASELINE_PER = [-3 -1]; % baseline period before stim
+    % Removes the nosepokes that are from the simulated responses (free
+    % infusion)
+    if remove_free_inf == 1
+        if streamAorC == 1
+            data.epocs.aRL_.onset = data.epocs.aRL_.onset(FR+1:end,:);
+        elseif streamAorC == 2
+            data.epocs.bRL_.onset = data.epocs.bRL_.onset(FR+1:end,:);
+        end
+    end
+    % Removes the nosepoke epoc that results in an infusion 
+    if remove_infusion_np == 1
+        if streamAorC == 1
+            indices_to_remove = 1:FR:size(data.epocs.aRL_.onset,1);
+            data.epocs.aRL_.onset = data.epocs.aRL_.onset(setdiff(1:end,indices_to_remove),:);
+        elseif streamAorC == 2
+            indices_to_remove = 1:FR:size(data.epocs.bRL_.onset,1);
+            data.epocs.bRL_.onset = data.epocs.bRL_.onset(setdiff(1:end,indices_to_remove),:);
+        end
+    end
+
+
+    
+    
     ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
     ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
     if streamAorC == 1
@@ -152,8 +182,14 @@ for batch = 1:numFiles
         epoc_stream_store{batch} = zall;
     elseif tanks2analyze == 2
         epoc_stream_store = zall;
+        f1 = figure;
+        imagesc(ts1, 1, zall);
+        colormap('jet'); colorbar; 
+        title(sprintf('Z-Score/Trial', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 20);
+        xlabel('Time, s', 'FontSize', 16);
+        ylabel('Trial', 'FontSize', 16); 
     end
-       
+  
 end
 
 

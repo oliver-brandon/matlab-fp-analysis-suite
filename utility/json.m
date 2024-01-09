@@ -1,10 +1,12 @@
 clear
 myDir = uigetdir('','Choose the mat file(s) you want to convert to json.'); %gets directory%
+disp('Choose a folder containing one or more .mat files to convert to .json')
 if myDir == 0
     disp("Select a directory of mat files to start")
     return
 end
 savDir = uigetdir('','Choose where you want to save the json file(s).'); %gets directory%
+disp('Choose a destination folder to save the .json files')
 if savDir == 0
     disp("Select a valid save directory")
     return
@@ -20,8 +22,12 @@ for i = 1:numFiles
     FILEPATH = fullfile(myDir,myFiles(i).name);
     load(FILEPATH);
     [~,name,~] = fileparts(FILEPATH);
-    jsonStr = jsonencode(data,'PrettyPrint',true);
     jsonFileName = strcat(savDir, '/', name, '.json');
+    if exist(jsonFileName,"file")
+        fprintf("%s already exists...skipping\n",name)
+        continue
+    end
+    jsonStr = jsonencode(data,'PrettyPrint',true);
     fid = fopen(jsonFileName, 'w');
     fprintf(fid, '%s', jsonStr);
     fclose(fid);

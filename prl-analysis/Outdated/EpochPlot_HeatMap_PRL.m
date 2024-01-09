@@ -34,7 +34,7 @@ clear all; clc; close all;
 % load(matfile);
 
 
-BLOCKPATH = 'Z:\PRL_DF_Tanks\Empty_NA_NA_76MUL_Acq1_NA';
+BLOCKPATH = '/Volumes/CUDADRIVE/unprocessedTanks/Dual Fiber JZL/465F_Acq2-3_JZL18_Empty_NA_NA';
 [~,name,~] = fileparts(BLOCKPATH);
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 box_number = 3; %3 = 465A, 4 = 465C
@@ -63,9 +63,9 @@ elseif box_number == 4
         REF_EPOC = 'St2/';
     end
 end  
-TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-5 10]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
-BASELINE_PER = [-5 -1]; % baseline period before stim
+BASELINE_PER = [-3 -1]; % baseline period before stim
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 if box_number == 3 && training_logic == 2
@@ -114,7 +114,7 @@ if box_number == 3 && training_logic == 2
     incorrect_norewardA = nonzeros(incorrect_norewardA(:,1));
     
     if isempty(correct_rewardedA) == 1
-    correct_rewardedA = 0;
+        correct_rewardedA = 0;
     end
     if isempty(correct_norewardA) == 1
         correct_norewardA = 0;

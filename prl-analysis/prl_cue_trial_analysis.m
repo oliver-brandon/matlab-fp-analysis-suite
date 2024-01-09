@@ -5,17 +5,17 @@ warning off
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore
-amp_window = [0 2]; % time window to grab amplitude from
+amp_window = [0 5]; % time window to grab amplitude from
 auc_window = [-1 timeWindow];
 t = 0; % seconds to clip from start of streams
-N = 1; %Downsample N times
+N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 removeOutlierTrials = 0; % 1 = remove
-figsavepath = 'E:\Google Drive\prl\PRL_GRABDA\cueByTrialFigs\';
+figsavepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/cueByTrialFigs/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('E:\Google Drive\prl\PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('H:\My Drive\prl\PRL_GRABDA\sfn2023posterdata','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -30,6 +30,10 @@ IDs = {};
 treatList = {};
 prl_phase = {};
 omitted = struct('file', {}, 'timestamp', {}, 'trial', {}, 'signal', {});
+allCueTrials = [];
+allTrialNum = [];
+allTrialVal = [];
+allIDs = [];
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
@@ -131,6 +135,8 @@ for i = 1:numFiles
     end
     idx = find(ts1>-0.5,1);
     for n = 1:height(cueTT_raw)
+        allTrialNum = [allTrialNum;n];
+        allIDs = [allIDs;i];
         % dF/F
         meanBase = mean(cueTT_raw(n,baseSt:baseEn));
         stdBase = std(cueTT_raw(n,baseSt:baseEn));
@@ -168,24 +174,31 @@ for i = 1:numFiles
         if leverArray(n,2) == 1
             cuelever_cRew = [cuelever_cRew;cueTT_z(n,:)];
             cuelever_Correct = [cuelever_Correct;cueTT_z(n,:)];
+            trialVal(n,1) = 1;
         elseif leverArray(n,2) == 2
             cuelever_cNoRew = [cuelever_cNoRew;cueTT_z(n,:)];
             cuelever_Correct = [cuelever_Correct;cueTT_z(n,:)];
+            trialVal(n,1) = 1;
         elseif leverArray(n,2) == 3
             cuelever_iRew = [cuelever_iRew;cueTT_z(n,:)];
             cuelever_Incorrect = [cuelever_Incorrect;cueTT_z(n,:)];
+            trialVal(n,1) = 0;
         elseif leverArray(n,2) == 4
             cuelever_iNoRew = [cuelever_iNoRew;cueTT_z(n,:)];
             cuelever_Incorrect = [cuelever_Incorrect;cueTT_z(n,:)];
+            trialVal(n,1) = 0;
         end
     end
-    for jj = 1:length(leverArray)
-        if leverArray(jj,2) == 1 || leverArray(jj,2) == 2
-            trialVal(jj,1) = 1;
-        else
-            trialVal(jj,1) = 0;
-        end
-    end
+
+    % for jj = 1:height(leverArray)
+    %     if leverArray(jj,2) == 1 || leverArray(jj,2) == 2
+    %         trialVal(jj,1) = 1;
+    %     elseif leverArray(jj,2) == 0
+    %         disp(filename)
+    %     else
+    %         trialVal(jj,1) = 0;
+    %     end
+    % end
     x = 1:1:length(cueAMP);
     f1 = figure;
     title(TITLE)
@@ -205,8 +218,22 @@ for i = 1:numFiles
     set(gca,'YColor','black','Box', 'on','Color','w')
     set(get(gca, 'YLabel'), 'Rotation', -90, 'Color','black') % Rotate the right ylabel
     file_name1 = char(strcat(figsavepath,TITLE,' Cue by Trial','.pdf'));
-    print(f1,file_name1,'-dpdf','-vector','-bestfit');
+    % print(f1,file_name1,'-dpdf','-vector','-bestfit');
     close all
+
+    allCueTrials = [allCueTrials;cueTT_z];
+    allTrialVal = [allTrialVal;trialVal];
+    
+
 end
+
+allIDs = array2table(allIDs,'VariableNames',{'id'});
+allTrialNum = array2table(allTrialNum,'VariableNames',{'trialNum'});
+allTrialVal = array2table(allTrialVal(1:end,:),'VariableNames',{'trialOutcome'});
+allCueTrials = array2table(allCueTrials);
+prlCueTrials = horzcat(allIDs,allTrialNum,allTrialVal,allCueTrials);
+
+
+
 toc
 NERD_STATS(toc,numFiles);

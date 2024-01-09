@@ -14,11 +14,13 @@
 % analyses significantly. For instructions, check out the README.
 
 myDir = uigetdir('','Choose the tank(s) you want to save.'); %gets directory%
+disp('Choose a folder containing one or more tanks that you wish to save.')
 if myDir == 0
     disp("Select a tank to start")
     return
 end
 savDir = uigetdir('','Choose where you want to save the .mat(s).'); %gets directory%
+disp('Choose a save location.')
 if savDir == 0
     disp("Select a valid save directory")
     return
