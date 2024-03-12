@@ -1,16 +1,19 @@
 clear; close all;
 warning off
+
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-3 -1]; % baseline signal for dFF/zscore
+baseline = [-5 0]; % baseline signal for dFF/zscore
 amp_window = [0 1]; % time window to grab amplitude from
 auc_window = [0 2];
-t = 0; % seconds to clip from start of streams
+t = 10; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
+adjustBase = 0; % 1 = yes, 2 = no
+baseAdjust = -0.5;
 removeOutlierTrials = 0; % 1 = remove
 plotOmitted = 0; % 1 = plot
 removeFirstTrial = 1; % 1 = keep, 2 = remove
@@ -35,6 +38,7 @@ omitted = struct('file', {}, 'timestamp', {}, 'trial', {}, 'signal', {});
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
+    fprintf('Analyzing %s (%d of %d)\n', name, i, numFiles)
     brokenID = strsplit(name,'_');
     tempID = cellstr(brokenID(1));
     tempPhase = cellstr(brokenID(2));
@@ -46,11 +50,22 @@ for i = 1:numFiles
     if dualFiber == 1
         ISOS = 'x405A';
         SIGNAL = 'x465A';
-        cue = data.epocs.St1_.onset;
-        cRew = data.epocs.cRewA.onset;
-        cNoRew = data.epocs.cNoRewA.onset;
-        iRew = data.epocs.iRewA.onset;
-        iNoRew = data.epocs.iNoRewA.onset;
+        if isfield(data.epocs,'St1_')
+            cue = data.epocs.St1_.onset;
+            cRew = data.epocs.cRewA.onset;
+            cNoRew = data.epocs.cNoRewA.onset;
+            iRew = data.epocs.iRewA.onset;
+            iNoRew = data.epocs.iNoRewA.onset;
+        elseif isfield(data.epocs,'St2_')
+            cue = data.epocs.St2_.onset;
+            cRew = data.epocs.cRewC.onset;
+            cNoRew = data.epocs.cNoRewC.onset;
+            iRew = data.epocs.iRewC.onset;
+            iNoRew = data.epocs.iNoRewC.onset;
+        else
+            disp('Cannot find epocs')
+            break
+        end
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
             cNoRew,iRew,iNoRew);
         data.analysis.sessionID = session_identifiers;
@@ -100,7 +115,8 @@ for i = 1:numFiles
     
     session_time = downsample(session_time, N);
     ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(SIGNAL).fs*N;
-
+    
+    idx = find(ts1>baseAdjust,1);
     [~,baseSt] = min(abs(ts1 - baseline(1)));
     [~,baseEn] = min(abs(ts1 - baseline(2)));
     [~,ampSt] = min(abs(ts1 - amp_window(1)));
@@ -156,7 +172,6 @@ for i = 1:numFiles
     end
 
     %% loop for cue BEFORE trial %%
-    idx = find(ts1>-0.5,1);
     for n = 1:height(cueTT_raw)
         % dF/F
         meanBase = mean(cueTT_raw(n,baseSt:baseEn));
@@ -168,15 +183,18 @@ for i = 1:numFiles
         meanBase_dFF = mean(cueTT_dFF(n,baseSt:baseEn));
         stdBase_dFF = std(cueTT_dFF(n,baseSt:baseEn));
         cueTT_z(n,1:epocArrayLen) = (cueTT_dFF(n,1:epocArrayLen) - meanBase_dFF) / stdBase_dFF;
-       
-        if cueTT_z(n,idx) < 0
-            val = cueTT_z(n,idx);
-            diff = 0 - val;
-            cueTT_z(n,1:epocArrayLen) = cueTT_z(n,1:epocArrayLen) + abs(diff);
-        elseif cueTT_z(n,idx) > 0
-            val = cueTT_z(n,idx);
-            diff = 0 - val;
-            cueTT_z(n,1:epocArrayLen) = cueTT_z(n,1:epocArrayLen) - abs(diff);
+        if adjustBase == 1
+            if cueTT_z(n,idx) < 0
+                val = cueTT_z(n,idx);
+                diff = 0 - val;
+                cueTT_z(n,1:epocArrayLen) = cueTT_z(n,1:epocArrayLen) + abs(diff);
+            elseif cueTT_z(n,idx) > 0
+                val = cueTT_z(n,idx);
+                diff = 0 - val;
+                cueTT_z(n,1:epocArrayLen) = cueTT_z(n,1:epocArrayLen) - abs(diff);
+            end
+        else
+            disp("")
         end
         if removeOutlierTrials == 1
             tempAMP = max(cueTT_z(n,ampSt:ampEn));
@@ -217,12 +235,12 @@ for i = 1:numFiles
         cuelever_cRewAUC(i,1) = nan;
     else
         cuelever_cRewSTREAMSz(i,1:epocArrayLen) = mean(cuelever_cRew,'omitnan');
-        cuelever_cRewAMP(i,1) = max(cuelever_cRewSTREAMSz(i,ampSt:ampEn));
-        % Calculate AUC above x=0 %
-        positive_indices = cuelever_cRewSTREAMSz(i,:) > 0;
-        y_pos = cuelever_cRewSTREAMSz(i,positive_indices);
-        x_pos = ts1(1,positive_indices);
-        cuelever_cRewAUC(i,1) = trapz(x_pos,y_pos);
+        cuelever_cRewAMP(i,1) = calculateAMP(cuelever_cRewSTREAMSz(i,ampSt:ampEn));
+        % % Calculate AUC above x=0 %
+        % positive_indices = cuelever_cRewSTREAMSz(i,:) > 0;
+        % y_pos = cuelever_cRewSTREAMSz(i,positive_indices);
+        % x_pos = ts1(1,positive_indices);
+        cuelever_cRewAUC(i,1) = calculateAUC(cuelever_cRewSTREAMSz(i,aucSt:aucEn),ts1(1, aucSt:aucEn));
     end
     if isempty(cuelever_cNoRew)
         cuelever_cNoRewSTREAMSz(i,1:epocArrayLen) = nan;
@@ -230,12 +248,12 @@ for i = 1:numFiles
         cuelever_cNoRewAUC(i,1) = nan;
     else
         cuelever_cNoRewSTREAMSz(i,1:epocArrayLen) = mean(cuelever_cNoRew,'omitnan');
-        cuelever_cNoRewAMP(i,1) = max(cuelever_cNoRewSTREAMSz(i,ampSt:ampEn));
+        cuelever_cNoRewAMP(i,1) = calculateAMP(cuelever_cNoRewSTREAMSz(i,ampSt:ampEn));
         % Calculate AUC above x=0 %
-        positive_indices = cuelever_cNoRewSTREAMSz(i,:) > 0;
-        y_pos = cuelever_cNoRewSTREAMSz(i,positive_indices);
-        x_pos = ts1(1,positive_indices);
-        cuelever_cNoRewAUC(i,1) = trapz(x_pos,y_pos);
+        % positive_indices = cuelever_cNoRewSTREAMSz(i,:) > 0;
+        % y_pos = cuelever_cNoRewSTREAMSz(i,positive_indices);
+        % x_pos = ts1(1,positive_indices);
+        cuelever_cNoRewAUC(i,1) = calculateAUC(cuelever_cNoRewSTREAMSz(i,aucSt:aucEn),ts1(1, aucSt:aucEn));;
     end
     if isempty(cuelever_iRew)
         cuelever_iRewSTREAMSz(i,1:epocArrayLen) = nan;
@@ -243,12 +261,12 @@ for i = 1:numFiles
         cuelever_iRewAUC(i,1) = nan;
     else
         cuelever_iRewSTREAMSz(i,1:epocArrayLen) = mean(cuelever_iRew,'omitnan');
-        cuelever_iRewAMP(i,1) = max(cuelever_iRewSTREAMSz(i,ampSt:ampEn));
-        % Calculate AUC above x=0 %
-        positive_indices = cuelever_iRewSTREAMSz(i,:) > 0;
-        y_pos = cuelever_iRewSTREAMSz(i,positive_indices);
-        x_pos = ts1(1,positive_indices);
-        cuelever_iRewAUC(i,1) = trapz(x_pos,y_pos);
+        cuelever_iRewAMP(i,1) = calculateAMP(cuelever_iRewSTREAMSz(i,ampSt:ampEn));
+        % % Calculate AUC above x=0 %
+        % positive_indices = cuelever_iRewSTREAMSz(i,:) > 0;
+        % y_pos = cuelever_iRewSTREAMSz(i,positive_indices);
+        % x_pos = ts1(1,positive_indices);
+        cuelever_iRewAUC(i,1) = calculateAUC(cuelever_iRewSTREAMSz(i,aucSt:aucEn),ts1(1, aucSt:aucEn));
     end
     if isempty(cuelever_iNoRew)
         cuelever_iNoRewSTREAMSz(i,1:epocArrayLen) = nan;
@@ -256,12 +274,12 @@ for i = 1:numFiles
         cuelever_iNoRewAUC(i,1) = nan;
     else
         cuelever_iNoRewSTREAMSz(i,1:epocArrayLen) = mean(cuelever_iNoRew,'omitnan');
-        cuelever_iNoRewAMP(i,1) = max(cuelever_iNoRewSTREAMSz(i,ampSt:ampEn));
-        % Calculate AUC above x=0 %
-        positive_indices = cuelever_iNoRewSTREAMSz(i,:) > 0;
-        y_pos = cuelever_iNoRewSTREAMSz(i,positive_indices);
-        x_pos = ts1(1,positive_indices);
-        cuelever_iNoRewAUC(i,1) = trapz(x_pos,y_pos);
+        cuelever_iNoRewAMP(i,1) = calculateAMP(cuelever_iNoRewSTREAMSz(i,ampSt:ampEn));
+        % % Calculate AUC above x=0 %
+        % positive_indices = cuelever_iNoRewSTREAMSz(i,:) > 0;
+        % y_pos = cuelever_iNoRewSTREAMSz(i,positive_indices);
+        % x_pos = ts1(1,positive_indices);
+        cuelever_iNoRewAUC(i,1) = calculateAUC(cuelever_iNoRewSTREAMSz(i,aucSt:aucEn),ts1(1, aucSt:aucEn));;
     end
     if isempty(cuelever_Correct)
         cuelever_correctSTREAMSz(i,1:epocArrayLen) = nan;
@@ -271,14 +289,23 @@ for i = 1:numFiles
         for x = 1:height(cuelever_Correct)
             cuelever_Correct(sum(cuelever_Correct(x,:)) == 0) = [];
         end
-        cuelever_correctSTREAMSz(i,1:epocArrayLen) = mean(cuelever_Correct,'omitnan');
-
+        if height(cuelever_Correct) > 1   
+            cuelever_correctSTREAMSz(i,1:epocArrayLen) = mean(cuelever_Correct,'omitnan');
+        elseif height(cuelever_Correct) == 1
+            cuelever_correctSTREAMSz(i,1:epocArrayLen) = cuelever_Correct;
+        else
+            disp('Error calculating mean for cuelever_Correct')
+        end
+        % if cuelever_correctSTREAMSz(i,idx) < 0
+        %     val = cuelever_correctSTREAMSz(i,idx);
+        %     diff = 0 - val;
+        %     cuelever_correctSTREAMSz(i,1:epocArrayLen) = cuelever_correctSTREAMSz(i,1:epocArrayLen) + abs(diff);
+        % elseif cuelever_correctSTREAMSz(i,idx) > 0
+        %     val = cuelever_correctSTREAMSz(i,idx);
+        %     diff = 0 - val;
+        %     cuelever_correctSTREAMSz(i,1:epocArrayLen) = cuelever_correctSTREAMSz(i,1:epocArrayLen) - abs(diff);
+        % end
         cuelever_correctAMP(i,1) = calculateAMP(cuelever_correctSTREAMSz(i,ampSt:ampEn));
-        % Calculate AUC above x=0 %
-        % positive_indices = cuelever_correctSTREAMSz(i,:) > 0;
-        % y_pos = cuelever_correctSTREAMSz(i,positive_indices);
-        % x_pos = ts1(1,positive_indices);
-        % cuelever_correctAUC(i,1) = trapz(x_pos,y_pos);
         cuelever_correctAUC(i,1) = calculateAUC(cuelever_correctSTREAMSz(i,aucSt:aucEn),ts1(1,aucSt:aucEn));
     end
     if isempty(cuelever_Incorrect)
@@ -289,14 +316,23 @@ for i = 1:numFiles
         for x = 1:height(cuelever_Incorrect)
             cuelever_Incorrect(sum(cuelever_Incorrect(x,:)) == 0) = [];
         end
-        cuelever_incorrectSTREAMSz(i,1:epocArrayLen) = mean(cuelever_Incorrect,'omitnan');
-
+        if height(cuelever_Incorrect) > 1   
+            cuelever_incorrectSTREAMSz(i,1:epocArrayLen) = mean(cuelever_Incorrect,'omitnan');
+        elseif height(cuelever_Incorrect) == 1
+            cuelever_incorrectSTREAMSz(i,1:epocArrayLen) = cuelever_Incorrect;
+        else
+            disp('Error calculating mean for cuelever_Incorrect')
+        end
+        % if cuelever_incorrectSTREAMSz(i,idx) < 0
+        %     val = cuelever_incorrectSTREAMSz(i,idx);
+        %     diff = 0 - val;
+        %     cuelever_incorrectSTREAMSz(i,1:epocArrayLen) = cuelever_incorrectSTREAMSz(i,1:epocArrayLen) + abs(diff);
+        % elseif cuelever_incorrectSTREAMSz(i,idx) > 0
+        %     val = cuelever_incorrectSTREAMSz(i,idx);
+        %     diff = 0 - val;
+        %     cuelever_incorrectSTREAMSz(i,1:epocArrayLen) = cuelever_incorrectSTREAMSz(i,1:epocArrayLen) - abs(diff);
+        % end
         cuelever_incorrectAMP(i,1) = calculateAMP(cuelever_incorrectSTREAMSz(i,ampSt:ampEn));
-        % Calculate AUC above x=0 %
-        % positive_indices = cuelever_incorrectSTREAMSz(i,:) > 0;
-        % y_pos = cuelever_incorrectSTREAMSz(i,positive_indices);
-        % x_pos = ts1(1,positive_indices);
-        % cuelever_incorrectAUC(i,1) = trapz(x_pos,y_pos);
         cuelever_incorrectAUC(i,1) = calculateAUC(cuelever_incorrectSTREAMSz(i,aucSt:aucEn),ts1(1,aucSt:aucEn));
     end
 
@@ -380,6 +416,8 @@ cuelever_correctTable = horzcat(IDs,treatList,phase,cuelever_correctTable);
 cuelever_incorrectTable = array2table(cuelever_incorrectSTREAMSz);
 cuelever_incorrectTable = horzcat(IDs,treatList,phase,cuelever_incorrectTable);
 
+
+
 cueleverTTAMP = [cuelever_cRewAMP cuelever_cNoRewAMP cuelever_iRewAMP cuelever_iNoRewAMP];
 cueleverTTAMP = array2table(cueleverTTAMP,'VariableNames',{'cue_cRew','cue_cNoRew','cue_iRew','cue_iNoRew'});
 cueleverTTAMP = horzcat(IDs,treatList,phase,cueleverTTAMP);
@@ -417,6 +455,8 @@ cuelever_incorrectTable = sortrows(cuelever_incorrectTable,{'Phase','Treatment'}
 cueleverAMP = sortrows(cueleverAMP,{'Phase','Treatment'},{'ascend','descend'});
 cueleverAUC = sortrows(cueleverAUC,{'Phase','Treatment'},{'ascend','descend'});
 
+cuelever_correctTable = rows2vars(cuelever_correctTable);
+cuelever_incorrectTable = rows2vars(cuelever_incorrectTable);
 %% cue before lever fig %%
 f1 = figure;
 subplot(4,1,1)

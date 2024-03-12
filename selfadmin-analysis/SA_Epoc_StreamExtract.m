@@ -3,17 +3,20 @@
 % Clear workspace and close existing figures.
 % Add data
 clear all; clc; close all;
-FR = 5; % Fixed ratio
+FR = 1; % Fixed ratio
 tanks2analyze = 2; % 1=batch, 2=single
 streamAorC = 1; % 1=465A, 2=465C
 % epoc = {'aHL/','bHL/'};
 
 remove_infusion_np = 0; % 1 = remove infusion nosepokes
 remove_free_inf = 1; % 1 = remove nosepokes from free infusion at start
-epoc = {'aRL/','bRL/'}; % enter the epoc of interest (a and b)
+% epoc = {'aReward','bReward'}; % enter the epoc of interest (a and b)
+% epoc = {'aActiveRew','bActiveRew'};
+% epoc = {'aActiveTimeout','bActiveTimeout'};
+epoc = {'aRL/','bRL/'};
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
-BASELINE_PER = [-2 0]; % baseline period before stim
-% 
+BASELINE_PER = [-3 -1]; % baseline period before stim
+
 % epoc = {'aRw/','bRw/'};
 % TRANGE = [-2 22]; %window size [start time relative to epoc onset, entire duration]
 % BASELINE_PER = [-2 0]; % baseline period before stim
@@ -27,7 +30,7 @@ if tanks2analyze == 1
     epoc_stream_store = cell(numFiles);
     disp("Starting batch tank extract...")
 elseif tanks2analyze == 2
-    myDir = uigetdir('/Volumes/CUDADRIVE/unprocessedTanks');
+    myDir = uigetdir('/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/tanks');
     numFiles = 1;
     epoc_stream_store = cell(numFiles);
     disp("Starting single tank extract...")
@@ -43,35 +46,60 @@ for batch = 1:numFiles
     emptyID = 'Empty';
     brokenID = strsplit(name,'_');
     animalIDA = char(brokenID{1});
+    animalIDC = char(brokenID{3});
     taskA = char(brokenID{2});
+    taskC = char(brokenID{4});
     if streamAorC == 1
         emptylogicA = strcmp(animalIDA,emptyID);
         if emptylogicA == 1
             disp("Stream A is empty")
             continue
         elseif emptylogicA == 0
-            disp('')
+            data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
+            [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.aRL_.onset, 20);
+            [data] = createEpoc(data, rewardTimestamps, 'aActiveRew');
+            [data] = createEpoc(data, rewardTimeout, 'aRewTimeout');
+            [data] = createEpoc(data, timeoutTimestamps, 'aActiveTimeout');
+            [data] = createEpoc(data, data.epocs.aRw_.offset, 'aReward');
         end
     end
-    animalIDC = char(brokenID{3});
+    
     if streamAorC == 2
         emptylogicC = strcmp(animalIDC,emptyID);
         if emptylogicC == 1
             disp("Stream C is empty")
             continue
         elseif emptylogicC == 0
-            disp('')
+            data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
+            [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.bRL_.onset, 20);
+            [data] = createEpoc(data, rewardTimestamps, 'bActiveRew');
+            [data] = createEpoc(data, rewardTimeout, 'bRewTimeout');
+            [data] = createEpoc(data, timeoutTimestamps, 'bActiveTimeout');
+            [data] = createEpoc(data, data.epocs.bRw_.offset, 'bReward');
         end
     end
-    data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs','streams'});
+    
+    % Creates reward epoc from offset instead of onset
+    % data.epocs.aReward.onset = data.epocs.aRw_.offset;
+    % data.epocs.aReward.offset = data.epocs.aRw_.onset;
+    % data.epocs.aReward.name = 'aReward';
+    % data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
+    % data.epocs.bReward.onset = data.epocs.bRw_.offset;
+    % data.epocs.bReward.offset = data.epocs.bRw_.onset;
+    % data.epocs.bReward.name = 'bReward';
+    % data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
     REF_EPOC = char(epoc(streamAorC));
     % Removes the nosepokes that are from the simulated responses (free
     % infusion)
     if remove_free_inf == 1
         if streamAorC == 1
             data.epocs.aRL_.onset = data.epocs.aRL_.onset(FR+1:end,:);
+            data.epocs.aActiveRew.onset = data.epocs.aActiveRew.onset(FR+1:end,:);
+            data.epocs.aActiveTimeout.onset = data.epocs.aActiveTimeout.onset(FR+1:end,:);
         elseif streamAorC == 2
             data.epocs.bRL_.onset = data.epocs.bRL_.onset(FR+1:end,:);
+            data.epocs.bActiveRew.onset = data.epocs.bActiveRew.onset(FR+1:end,:);
+            data.epocs.bActiveTimeout.onset = data.epocs.bActiveTimeout.onset(FR+1:end,:);
         end
     end
     % Removes the nosepoke epoc that results in an infusion 
@@ -84,7 +112,6 @@ for batch = 1:numFiles
             data.epocs.bRL_.onset = data.epocs.bRL_.onset(setdiff(1:end,indices_to_remove),:);
         end
     end
-
 
     
     

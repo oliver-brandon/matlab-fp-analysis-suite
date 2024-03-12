@@ -127,8 +127,8 @@ for i = 1:length(myFiles)
     %calculates and plots median absolute deviation for both 465 signals%
     MAD1 = mad(detrend_465A, 1);
     MAD2 = mad(detrend_465C, 1);
-    [pks,locs,w,p] = findpeaks(detrend_465A, time, 'MinPeakHeight', MAD1);
-    [pks2,locs2,w2,p2] = findpeaks(detrend_465C, time, 'MinPeakHeight', MAD2);
+    [pks,locs,w,p] = findpeaks(detrend_465A, time, 'MinPeakProminence', MAD1);
+    [pks2,locs2,w2,p2] = findpeaks(detrend_465C, time, 'MinPeakProminence', MAD2);
     
     %plots entire streams with peak indicators% 
 %     subplot(2,1,1);

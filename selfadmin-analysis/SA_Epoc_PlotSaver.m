@@ -26,23 +26,23 @@ VERSION = "1.1";
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%% edit these variables %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure_savepath = 'H:\My Drive\self_admin\food_sa\Cortical NE-DA\IsosPlot\Figs\'; % include forward slash at end of path
+figure_savepath = '/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/figs/'; % include forward slash at end of path
 % epoc = {'aRw/','bRw/'};
-epoc = {'aRL/','bRL/'};
+% epoc = {'aRL/','bRL/'};
 % epoc = {'aHL/','bHL/'};
-% epoc = {'aReward','bReward'};
+epoc = {'aReward','bReward'};
 % epoc = {'aActiveRew','bActiveRew'};
 % epoc = {'aActiveTimeout','bActiveTimeout'};
 % epoc = {'aRewTimeout','bRewTimeout'};
-EPOCNAME = 'Active Press + Reward';
+EPOCNAME = 'Infusion';
 savetype = ".pdf";
-TRANGE = [-2 10]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 BASELINE_PER = [-3 -1]; % baseline period before stim
 N = 10; % Downsample Nx
-addVertLine = 1; % 1 = yes, 0 = no
-vertLineX = 3; % if adding vertical line, specifies the x coord
+addVertLine = 0; % 1 = yes, 0 = no
+vertLineX = 2; % if adding vertical line, specifies the x coord
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('H:\My Drive\self_admin\food_sa\Cortical NE-DA',"Select a folder containing one or more tanks"); 
+myDir = uigetdir('/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/tanks',"Select a folder containing one or more tanks"); 
 fprintf("SA_Epoc_PlotSaver Version: %s\n",VERSION)
 tic
 if myDir == 0
@@ -78,7 +78,7 @@ for batch = 1:length(myFiles)
                 disp("Stream A is empty")
                 continue
             elseif emptylogicA == 0
-                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.aRL_.offset, 10);
+                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.aRL_.onset, 10);
                 [data] = createEpoc(data, rewardTimestamps, 'aActiveRew');
                 [data] = createEpoc(data, rewardTimeout, 'aRewTimeout');
                 [data] = createEpoc(data, timeoutTimestamps, 'aActiveTimeout');
@@ -92,7 +92,7 @@ for batch = 1:length(myFiles)
                 disp("Stream C is empty")
                 continue
             elseif emptylogicC == 0
-                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.bRL_.offset, 10);
+                [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePoke(data.epocs.bRL_.onset, 10);
                 [data] = createEpoc(data, rewardTimestamps, 'bActiveRew');
                 [data] = createEpoc(data, rewardTimeout, 'bRewTimeout');
                 [data] = createEpoc(data, timeoutTimestamps, 'bActiveTimeout');

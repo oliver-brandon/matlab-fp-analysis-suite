@@ -3,7 +3,7 @@ clear;close all;
 toSave = 0; % set == 1 if want to overwrite the mat files
 numTrials = 30;
 %% Error Probability %%
-errorType = 4; % 1 = winStay, 2 = winShift, 3 = loseStay, 4 = loseShift
+errorType = 1; % 1 = winStay, 2 = winShift, 3 = loseStay, 4 = loseShift
 lever = 1; % 1 = correct, 2 = incorrect
 %%
 

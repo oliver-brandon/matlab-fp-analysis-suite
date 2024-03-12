@@ -1,22 +1,22 @@
 clear all; clc; close all;
 
-BLOCKPATH = '/Users/brandon/My Drive (bloliv95@gmail.com)/self_admin/coc_sa/PrL-aIC/signal_test/tanks/835_aIC_Empty_NA';
+BLOCKPATH = '/Volumes/CUDADRIVE/1035_20Hz_optoStimTest';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 STREAM_STORE1 = 'x405A';
 STREAM_STORE2 = 'x465A';
 
 % data = optoStimEpoch(data,10);
 % Creates reward epoc from offset instead of onset
-% data.epocs.aReward.onset = data.epocs.aRw_.offset;
-% data.epocs.aReward.offset = data.epocs.aRw_.onset;
-% data.epocs.aReward.name = 'aReward';
-% data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
+data.epocs.aReward.onset = data.epocs.aRw_.offset;
+data.epocs.aReward.offset = data.epocs.aRw_.onset;
+data.epocs.aReward.name = 'aReward';
+data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
 % data.epocs.bReward.onset = data.epocs.bRw_.offset;
 % data.epocs.bReward.offset = data.epocs.bRw_.onset;
 % data.epocs.bReward.name = 'bReward';
 % data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
 
-REF_EPOC = 'St1/'; % Stimulation event to center on
+REF_EPOC = 'aReward'; % Stimulation event to center on
 
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];

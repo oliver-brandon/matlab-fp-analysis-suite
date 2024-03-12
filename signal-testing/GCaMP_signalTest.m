@@ -5,17 +5,17 @@
 % by changing the value of 'N' below.
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figsavepath = '/Users/brandon/My Drive (bloliv95@gmail.com)/self_admin/coc_sa/PrL-aIC/signal_test/figures/'; % must include backslash at the end of the path
+figsavepath = '/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/figs/'; % must include backslash at the end of the path
 figsavetype = '.tif'; % can change to '.jpg', '.fig', etc.
 t = 30; % first t seconds are discarded to remove laser on artifact
 N = 10; % downsample signal N times
 position = 1; % 1 = mouse on A channel, 2 = mouse on C channel
-figSnip = [530, 590];
+figSnip = [590, 660];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Users/brandon/My Drive (bloliv95@gmail.com)/self_admin/coc_sa/PrL-aIC/signal_test/tanks', 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/tanks', 'Select a tank to plot');
 [~,name,~] = fileparts(TANK_NAME);
 brokenID = strsplit(name,'_');
 if position == 1
@@ -78,17 +78,22 @@ ind2 = find(time > figSnip(2),1);
 GCaMP_snip = GCaMP_Z(ind1:ind2);
 time_snip = time(ind1:ind2);
 
+x1 = ceil(time(1,1));
+x2 = ceil(time(1,end));
 % Creates figure of raw, dFF, and detrended dFF GCaMP signal
 f1 = figure;
 subplot(4,1,1)
 plot(time,ISOS_raw,'r')
+xlim([x1 x2]);
 title(TITLE)
 ylabel("Raw Isosbestic (mV)")
 subplot(4,1,2)
 plot(time,GCaMP_raw,'b')
+xlim([x1 x2]);
 ylabel("GCaMP6f (mV)")
 subplot(4,1,3)
 plot(time,GCaMP_Z,'b')
+xlim([x1 x2]);
 ylabel('Normalized GCaMP6f')
 subplot(4,1,4)
 plot(time_snip,GCaMP_snip,'b')

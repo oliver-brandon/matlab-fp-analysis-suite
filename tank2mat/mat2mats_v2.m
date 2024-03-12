@@ -19,7 +19,7 @@
 % Fill task/treatment fields with "NA"
 % For more instructions, check out the README.
 clear
-VERSION = "2.1";
+VERSION = "2.2";
 fprintf("VERSION: %s\n",VERSION)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,10 +55,12 @@ for i = 1:numFiles
     emptylogicA = strcmp(animalIDA,emptyID);
     emptylogicC = strcmp(animalIDC,emptyID);
     load(FILEPATH);
-    data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+    
     if dualFiber == 1
         for subjects = 1:2
             if subjects == 1
+                data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+      
                 if emptylogicA == 1
                     disp("Stream A is empty")
                     totFiles = totFiles - 1;
@@ -94,8 +96,7 @@ for i = 1:numFiles
                     clear data
                 end
             elseif subjects == 2
-                load(FILEPATH);
-                data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+                
                 if emptylogicC == 1
                     disp("Stream C is empty")
                     totFiles = totFiles - 1;

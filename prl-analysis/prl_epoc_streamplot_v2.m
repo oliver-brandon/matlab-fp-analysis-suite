@@ -30,13 +30,13 @@ baselineZ_lever = [-3 -1];
 N = 10; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/My Drive (bloliv95@gmail.com)/prl/GrabNE/figures/';
+figure_savepath = '/Users/brandon/personal-drive/prl/GrabDA/nac_jzl/nac2024cohort/figs/';
 % figure_savepath = '/Users/brandon/'; % for testing
 savetype = '.tif';
 VERSION = 'v2.1';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('/Users/brandon/My Drive (bloliv95@gmail.com)/prl/GrabNE',"Select a folder containing one or more files"); 
+myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA/nac_jzl/nac2024cohort',"Select a folder containing one or more files"); 
 fprintf("prl_epoc_plotsaver %s\n",VERSION)
 tic
 if myDir == 0
@@ -263,10 +263,10 @@ for batch = 1:numFiles
             % Axis labels
             xlabel('Time (s)', 'FontSize',12);
             ylabel(['zScore GrabDA ' pmchar 'SEM'],'FontSize',12);
-            TITLE{i} = strcat(animalID," ",task," ",epoc_name{i}," ",treatment);
+            TITLE{i} = strcat(task," ",epoc_name{i});
         
             % Legend
-            title(TITLE{i},'FontSize',18);
+            title(TITLE{i},'FontSize',10);
             legend({'Mean', 'Standard Error'}, 'Location', 'best');
 
         else

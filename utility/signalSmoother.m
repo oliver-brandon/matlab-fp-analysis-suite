@@ -6,8 +6,8 @@ for i = 1:size(sigs,2)
         smooth_sigs2(:,i) = NaN;
         continue
     end
-    smooth_sigs1(:,i) = smoothdata(sigs(:,i),'movmean',10);
-    smooth_sigs2(:,i) = smoothdata(sigs(:,i),'movmean',15);
+    smooth_sigs1(:,i) = smoothdata(sigs(:,i),'movmean',50);
+    smooth_sigs2(:,i) = smoothdata(sigs(:,i),'movmean',75);
 end
 subplot(3,1,1)
 plot(sigs)

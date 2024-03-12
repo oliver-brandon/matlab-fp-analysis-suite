@@ -4,7 +4,7 @@ function [rewardTimestamps, rewardTimeout, timeoutTimestamps] = separateActivePo
     %   epocOnset - a column vector of epocOnset.
     % Outputs:
     %   rewardTimestamps - epocOnset that resulted in a reward.
-    %   timeoutTimestamps - epocOnset during the 20-second timeout period.
+    %   timeoutTimestamps - epocOnset during the timeout period.
 
     % Initialize the output vectors
     rewardTimestamps = [];
