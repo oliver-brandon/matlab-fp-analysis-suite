@@ -1,22 +1,22 @@
-clear all; clc; close all;
+clear; clc; close all;
 
-BLOCKPATH = '/Volumes/CUDADRIVE/1035_20Hz_optoStimTest';
+BLOCKPATH = '/Users/brandon/personal-drive/optomouse_prime/tanks/1035F_20Hz-2mW-5pulse';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
 STREAM_STORE1 = 'x405A';
 STREAM_STORE2 = 'x465A';
 
 % data = optoStimEpoch(data,10);
 % Creates reward epoc from offset instead of onset
-data.epocs.aReward.onset = data.epocs.aRw_.offset;
-data.epocs.aReward.offset = data.epocs.aRw_.onset;
-data.epocs.aReward.name = 'aReward';
-data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
+% data.epocs.aReward.onset = data.epocs.aRw_.offset;
+% data.epocs.aReward.offset = data.epocs.aRw_.onset;
+% data.epocs.aReward.name = 'aReward';
+% data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
 % data.epocs.bReward.onset = data.epocs.bRw_.offset;
 % data.epocs.bReward.offset = data.epocs.bRw_.onset;
 % data.epocs.bReward.name = 'bReward';
 % data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
 
-REF_EPOC = 'aReward'; % Stimulation event to center on
+REF_EPOC = 'aRw/'; % Stimulation event to center on
 
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
@@ -35,13 +35,17 @@ data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE);
 
 % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
 % below -ARTIFACT level, remove it from the data set.
-art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
-art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
+art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
+art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
 good = ~art1 & ~art2;
 data.streams.(STREAM_STORE1).filtered = data.streams.(STREAM_STORE1).filtered(good);
 
-art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
-art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
+art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
+art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
 good2 = ~art1 & ~art2;
 data.streams.(STREAM_STORE2).filtered = data.streams.(STREAM_STORE2).filtered(good2);
 
@@ -53,8 +57,10 @@ numArtifacts = sum(~good) + sum(~good2);
 % length so we can trim the excess off before calculating the mean.
 minLength1 = min(cellfun('prodofsize', data.streams.(STREAM_STORE1).filtered));
 minLength2 = min(cellfun('prodofsize', data.streams.(STREAM_STORE2).filtered));
-data.streams.(STREAM_STORE1).filtered = cellfun(@(x) x(1:minLength1), data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false);
-data.streams.(STREAM_STORE2).filtered = cellfun(@(x) x(1:minLength2), data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false);
+data.streams.(STREAM_STORE1).filtered = cellfun(@(x) x(1:minLength1), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false);
+data.streams.(STREAM_STORE2).filtered = cellfun(@(x) x(1:minLength2), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false);
 
 allSignals = cell2mat(data.streams.(STREAM_STORE1).filtered');
 
@@ -140,7 +146,8 @@ zerror = std(zall)/sqrt(size(zall,1));
 subplot(3,1,2);
 imagesc(ts2, 1, zall);
 colormap('jet'); % c1 = colorbar; 
-title(sprintf('Z-Score Heat Map', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14);
+title(sprintf('Z-Score Heat Map', ...
+    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14);
 ylabel('Trials', 'FontSize', 12);
 
 % Fill band values for second subplot. Doing here to scale onset bar
@@ -159,7 +166,8 @@ set(h, 'facealpha',.25,'edgecolor','none')
 axis tight
 xlabel('Time, s','FontSize',12)
 ylabel('Z-score', 'FontSize', 12)
-title(sprintf('465 nm Z-Score', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+title(sprintf('465 nm Z-Score', ...
+    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
 %c2 = colorbar;
 %%
 figure(2)
@@ -170,7 +178,8 @@ line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
 axis tight
 xlabel('Time, s','FontSize',12)
 ylabel('Z-score', 'FontSize', 12)
-title(sprintf('465 nm Z-Score', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+title(sprintf('465 nm Z-Score', ...
+    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
 
 %%
 figure(3)
@@ -185,13 +194,15 @@ set(h, 'facealpha',.25,'edgecolor','none')
 axis tight
 xlabel('Time, s','FontSize',18)
 ylabel('Z-score +/- SEM', 'FontSize', 18)
-title(sprintf('465 nm Z-Score', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 18)
+title(sprintf('465 nm Z-Score', ...
+    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 18)
 box off
 
 subplot(2,3,6);
 imagesc(ts2, 1, zall);
 colormap('jet'); colorbar; 
-title(sprintf('Z-Score/Trial', numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 16);
+title(sprintf('Z-Score/Trial', ...
+    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 16);
 xlabel('Time, s', 'FontSize', 12);
 ylabel('Trial', 'FontSize', 12);
 
