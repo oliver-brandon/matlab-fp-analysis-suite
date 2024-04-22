@@ -13,8 +13,8 @@ VERSION = 'v2.0';
 dual_fiber = 0; % 0 = no, single fiber. 1 = dual_fiber
 df_TTL = 1; % 1 = TTL1/A. 2 = TTL2/B 
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Sensor = 'GCaMP6f'; % example: 'GrabDA4.4'
-ROI = 'PrL';
+Grab_Sensor = 'GrabDA'; % example: 'GrabDA4.4'
+ROI = 'NAc';
 t = 20; % first t seconds are discarded to remove LED on artifact
 N = 100; % downsample signal N times
 ISOS = 'x405A'; % set name of isosbestic signal

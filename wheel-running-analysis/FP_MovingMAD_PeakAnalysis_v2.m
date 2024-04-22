@@ -22,8 +22,8 @@ WINDOW_SIZE_SECONDS = 15;
 MAD_MULTIPLIER = 2;
 MIN_PK_WIDTH = 0.2;
 %Snippet Args%
-SNIPPET_DURATION = 30; % Duration of the snippet in seconds
-SNIPPET_START_TIME = 1500; % Start time of the snippet in seconds
+SNIPPET_DURATION = 10; % Duration of the snippet in seconds
+SNIPPET_START_TIME = 1000; % Start time of the snippet in seconds
 %Stream Stores%
 DLS_ISOS = 'x405A'; % name of the 405A store
 DLS_DA = 'x465A'; % name of the 465A store
@@ -188,4 +188,5 @@ peak_indices_within_snippet = peak_indices & (time_pad >= SNIPPET_START_TIME) & 
 plot(time_pad(peak_indices_within_snippet), signalC(peak_indices_within_snippet), 'ro')
 hold off
 
-
+time_snip = time_pad(snippet_start_index:snippet_end_index);
+sigAsnip = signalA(snippet_start_index:snippet_end_index);

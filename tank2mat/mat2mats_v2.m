@@ -59,7 +59,7 @@ for i = 1:numFiles
     if dualFiber == 1
         for subjects = 1:2
             if subjects == 1
-                data.streams = rmfield(data.streams, {'Fi2r','Fi2d','Fi1r','Fi1d'});
+                
       
                 if emptylogicA == 1
                     disp("Stream A is empty")

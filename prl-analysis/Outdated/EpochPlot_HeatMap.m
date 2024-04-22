@@ -1,22 +1,25 @@
 clear; clc; close all;
-
-BLOCKPATH = '/Users/brandon/personal-drive/optomouse_prime/tanks/1035F_20Hz-2mW-5pulse';
+figSavePath = '/Volumes/CUDADRIVE/4-17-24/';
+saveFig = 1;
+setBaseline = 1;
+baseAdjust = -2;
+BLOCKPATH = '/Volumes/CUDADRIVE/4-17-24/807_FR1-10_793_FR1-10';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
-STREAM_STORE1 = 'x405A';
-STREAM_STORE2 = 'x465A';
+STREAM_STORE1 = 'x405C';
+STREAM_STORE2 = 'x465C';
 
 % data = optoStimEpoch(data,10);
 % Creates reward epoc from offset instead of onset
-% data.epocs.aReward.onset = data.epocs.aRw_.offset;
-% data.epocs.aReward.offset = data.epocs.aRw_.onset;
-% data.epocs.aReward.name = 'aReward';
-% data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
-% data.epocs.bReward.onset = data.epocs.bRw_.offset;
-% data.epocs.bReward.offset = data.epocs.bRw_.onset;
-% data.epocs.bReward.name = 'bReward';
-% data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
+data.epocs.aReward.onset = data.epocs.aRw_.offset;
+data.epocs.aReward.offset = data.epocs.aRw_.onset;
+data.epocs.aReward.name = 'aReward';
+data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
+data.epocs.bReward.onset = data.epocs.bRw_.offset;
+data.epocs.bReward.offset = data.epocs.bRw_.onset;
+data.epocs.bReward.name = 'bReward';
+data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
 
-REF_EPOC = 'aRw/'; % Stimulation event to center on
+REF_EPOC = 'bReward'; % Stimulation event to center on
 
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
@@ -31,8 +34,23 @@ ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 % the REF_EPOC to extract.  For stream events, the chunks of data are 
 % stored in cell arrays structured as data.streams.(STREAM_STORE1).filtered
 data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE);  
-
-
+figPath = strcat(BLOCKPATH,'/');
+[~,name,~] = fileparts(BLOCKPATH);
+brokenID = strsplit(name,'_');
+if strcmp(STREAM_STORE1,'x405A')
+    ID = brokenID(1);
+    task = brokenID(2);
+    ROI = 'NAc';
+elseif strcmp(STREAM_STORE1,'x405C')
+    ID = brokenID(3);
+    task = brokenID(4);
+    ROI = 'NAc';
+else
+    disp('Cannot find isosbestic signal. Check the naming and try again.')
+end
+% remove any "/" from REF_EPOC
+REF_EPOC = strrep(REF_EPOC,'/','');
+TITLE = strcat(ID,{'-'},task,{'-'},ROI,{'-'},REF_EPOC);
 % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
 % below -ARTIFACT level, remove it from the data set.
 art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), ...
@@ -136,6 +154,25 @@ else
 end
 
 
+if setBaseline == 1
+    idx = find(ts1>baseAdjust,1);
+    for base = 1:height(zall)
+        if zall(base,idx) < 0
+            val = zall(base,idx);
+            diff = 0 - val;
+            zall(base,:) = zall(base,:) + abs(diff);
+        elseif zall(base,idx) > 0
+            val = zall(base,idx);
+            diff = 0 - val;
+            zall(base,:) = zall(base,:) - abs(diff);
+        end
+    end
+    disp('Baseline correction applied')
+else
+    disp('No baseline correction applied')
+end
+
+
 
 
 % Standard error of the z-score
@@ -182,7 +219,7 @@ title(sprintf('465 nm Z-Score', ...
     numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
 
 %%
-figure(3)
+f3 = figure(3);
 subplot(2,3,[1,2,4,5])
 plot(ts2, mean(zall), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
 line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
@@ -194,8 +231,7 @@ set(h, 'facealpha',.25,'edgecolor','none')
 axis tight
 xlabel('Time, s','FontSize',18)
 ylabel('Z-score +/- SEM', 'FontSize', 18)
-title(sprintf('465 nm Z-Score', ...
-    numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 18)
+title(TITLE, 'FontSize', 18);
 box off
 
 subplot(2,3,6);
@@ -210,3 +246,12 @@ ylabel('Trial', 'FontSize', 12);
 % correctly
 XX = [ts2, fliplr(ts2)];
 YY = [mean(zall)-zerror, fliplr(mean(zall)+zerror)];
+
+if saveFig == 1
+    % Save figure 3 to saveFigPath
+    file_name1 = char(strcat(figSavePath,TITLE,'.pdf'));
+    orient(f3,'landscape');
+    print(f3,file_name1,'-dpdf','-vector','-bestfit','');
+else
+    disp('Figure not saved')
+end

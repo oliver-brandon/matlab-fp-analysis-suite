@@ -4,7 +4,7 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-5 -2]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
+baseline = [-5 -3]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
 amp_window = [0 5]; % time window to grab amplitude from
 auc_window = [0 5];
 tau_window = [0 2];
@@ -12,13 +12,13 @@ t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-baseAdjust = -1; % adjust baseline of signals to 'baseAdjust' seconds
+baseAdjust = -5; % adjust baseline of signals to 'baseAdjust' seconds
 toPlot = 0; % 1 = plot figures, 0 = don't plot
 dualFiber = 0; % 1 = dual fiber, 0 = single fiber
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(...
-    '/Users/brandon/My Drive (bloliv95@gmail.com)/prl/GrabDA/dls_jzl/mats (processed)/','Choose the .mat files you want to analyze.'...
+    'H:\My Drive\prl\GrabDA\cortex\mats-processed\Acq2-Rev1','Choose the .mat files you want to analyze.'...
     ); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
@@ -30,9 +30,7 @@ myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name},'.mat'));
 numFiles = length(myFiles);
-IDs = {};
-phaseList = {};
-treatList = {};
+
 
 AMPdFF_analysis = cell(numFiles,7);
 AMPz_analysis = cell(numFiles,7);
@@ -49,6 +47,9 @@ master_cNoRew_STREAMz = zeros(numFiles,epocArrayLen);
 master_iRew_STREAMz = zeros(numFiles,epocArrayLen);
 master_iNoRew_STREAMz = zeros(numFiles,epocArrayLen);
 
+IDs = cell(size(numFiles,1));
+phaseList = cell(size(numFiles,1));
+treatList = cell(size(numFiles,1));
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
@@ -643,6 +644,9 @@ for i = 1:numFiles
     master_cNoRew_cueBase_STREAMz(i,:) = mean(cNoRew_cueBase,1);
     master_iRew_cueBase_STREAMz(i,:) = mean(iRew_cueBase,1);
     master_iNoRew_cueBase_STREAMz(i,:) = mean(iNoRew_cueBase,1);
+    
+
+
 
     % Uncomment if grabbing amp, auc, tau from each trial
     % amp_cueBase_analysis(i,1:5) = {mean(amp_cue_cueBase,'omitnan') mean(amp_cRew_cueBase,'omitnan')...

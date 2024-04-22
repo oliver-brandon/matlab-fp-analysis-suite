@@ -33,10 +33,10 @@ baselineZ_lever = [3 1];
 N = 1; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/epocFigs/';% must include forward slash at end of path
+figure_savepath = '/Users/brandon/personal-drive/prl/GrabDA/cortex/figs/';% must include forward slash at end of path
 savetype = '.pdf'; % can set to desired file type
-stream_A = 'DLS';
-stream_C = 'NAc';
+stream_A = 'mPFC';
+stream_C = 'lOFC';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(pwd,"Select a folder containing one or more files"); 
