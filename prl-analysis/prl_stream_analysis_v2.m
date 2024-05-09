@@ -3,16 +3,15 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
-baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-5 -3]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
+baseWindow = 2; % baseline signal to include before TTL 
+baseline = [-2 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
 amp_window = [0 5]; % time window to grab amplitude from
 auc_window = [0 5];
-tau_window = [0 2];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-baseAdjust = -5; % adjust baseline of signals to 'baseAdjust' seconds
+baseAdjust = -0.5; % adjust baseline of signals to 'baseAdjust' seconds
 toPlot = 0; % 1 = plot figures, 0 = don't plot
 dualFiber = 0; % 1 = dual fiber, 0 = single fiber
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -376,8 +375,7 @@ for i = 1:numFiles
     [~,ampEn] = min(abs(ts1 - (amp_window(2))));
     [~,aucSt] = min(abs(ts1 - (auc_window(1))));
     [~,aucEn] = min(abs(ts1 - (auc_window(2))));
-    [~,tauSt] = min(abs(ts1 - (tau_window(1))));
-    [~,tauEn] = min(abs(ts1 - (tau_window(2))));
+ 
     
     %% Streams baselined to cue preceding it %%
     idx = find(ts1>baseAdjust,1);
@@ -472,49 +470,49 @@ for i = 1:numFiles
     if isempty(cRew_cueBase)
         amp_cRew_cueBase(i,:) = nan;
         auc_cRew_cueBase(i,:) = nan;
-        tau_cRew_cueBase(i,:) = nan;
+        
     else
         % amp_cRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
         % auc_cRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
         amp_cRew_cueBase(i,1) = calculateAMP(mean(cRew_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_cRew_cueBase(i,1) = calculateAUC(mean(cRew_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
-        tau_cRew_cueBase(i,1) = calculateTAU(mean(cRew_cueBase(:,tauSt:tauEn),1,'omitnan'),ts1(:,tauSt:tauEn));
+        
     end
 
     if isempty(cNoRew_cueBase)
         amp_cNoRew_cueBase = nan;
         auc_cNoRew_cueBase = nan;
-        tau_cNoRew_cueBase = nan;
+        
     else
         % amp_cNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
         % auc_cNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
         amp_cNoRew_cueBase(i,1) = calculateAMP(mean(cNoRew_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_cNoRew_cueBase(i,1) = calculateAUC(mean(cNoRew_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
-        tau_cNoRew_cueBase(i,1) = calculateTAU(mean(cNoRew_cueBase(:,tauSt:tauEn),1,'omitnan'),ts1(:,tauSt:tauEn));
+        
     end
 
     if isempty(iRew_cueBase)
         amp_iRew_cueBase = nan;
         auc_iRew_cueBase = nan;
-        tau_iRew_cueBase = nan;
+        
     else
         % amp_iRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
         % auc_iRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
         amp_iRew_cueBase(i,1) = calculateAMP(mean(iRew_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_iRew_cueBase(i,1) = calculateAUC(mean(iRew_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
-        tau_iRew_cueBase(i,1) = calculateTAU(mean(iRew_cueBase(:,tauSt:tauEn),1,'omitnan'),ts1(:,tauSt:tauEn));
+        
     end
 
     if isempty(iNoRew_cueBase)
         amp_iNoRew_cueBase = nan;
         auc_iNoRew_cueBase = nan;
-        tau_iNoRew_cueBase = nan;
+        
     else
         % amp_iNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
         % auc_iNoRew_cueBase = table2array(auc_cueBase(auc_cueBase.Trial_Type == 1,2));
         amp_iNoRew_cueBase(i,1) = calculateAMP(mean(iNoRew_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_iNoRew_cueBase(i,1) = calculateAUC(mean(iNoRew_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
-        tau_iNoRew_cueBase(i,1) = calculateTAU(mean(iNoRew_cueBase(:,tauSt:tauEn),1,'omitnan'),ts1(:,tauSt:tauEn));
+        
     end
 
     %% Streams baslined to before each epoc %%
@@ -609,7 +607,7 @@ for i = 1:numFiles
         cue_cueBase = outputSTREAMSz{1,1};
         amp_cue_cueBase(i,1) = calculateAMP(mean(cue_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_cue_cueBase(i,1) = calculateAUC(mean(cue_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
-        tau_cue_cueBase(i,1) = calculateTAU(mean(cue_cueBase(:,tauSt:tauEn),1,'omitnan'),ts1(:,tauSt:tauEn));
+        
     end
 
     
@@ -648,20 +646,18 @@ for i = 1:numFiles
 
 
 
-    % Uncomment if grabbing amp, auc, tau from each trial
+    % Uncomment if grabbing amp, auc from each trial
     % amp_cueBase_analysis(i,1:5) = {mean(amp_cue_cueBase,'omitnan') mean(amp_cRew_cueBase,'omitnan')...
     %     mean(amp_cNoRew_cueBase,'omitnan') mean(amp_iRew_cueBase,'omitnan') mean(amp_iNoRew_cueBase,'omitnan')};
     % auc_cueBase_analysis(i,1:5) = {mean(auc_cue_cueBase,'omitnan') mean(auc_cRew_cueBase,'omitnan')...
     %     mean(auc_cNoRew_cueBase,'omitnan') mean(auc_iRew_cueBase,'omitnan') mean(auc_iNoRew_cueBase,'omitnan')};
-    % tau_cueBase_analysis(i,1:5) = {mean(tau_cue_cueBase,'omitnan') mean(tau_cRew_cueBase,'omitnan')...
-    %     mean(tau_cNoRew_cueBase,'omitnan') mean(tau_iRew_cueBase,'omitnan') mean(tau_iNoRew_cueBase,'omitnan')};
+
     
     amp_cueBase_analysis(i,1:5) = {mean(amp_cue_cueBase,1,'omitnan') mean(amp_cRew_cueBase,1,'omitnan')...
         mean(amp_cNoRew_cueBase,1,'omitnan') mean(amp_iRew_cueBase,1,'omitnan') mean(amp_iNoRew_cueBase,1,'omitnan')};
     auc_cueBase_analysis(i,1:5) = {mean(auc_cue_cueBase,1,'omitnan') mean(auc_cRew_cueBase,1,'omitnan')...
         mean(auc_cNoRew_cueBase,1,'omitnan') mean(auc_iRew_cueBase,1,'omitnan') mean(auc_iNoRew_cueBase,1,'omitnan')};
-    tau_cueBase_analysis(i,1:5) = {mean(tau_cue_cueBase,1,'omitnan') mean(tau_cRew_cueBase,1,'omitnan')...
-        mean(tau_cNoRew_cueBase,1,'omitnan') mean(tau_iRew_cueBase,1,'omitnan') mean(tau_iNoRew_cueBase,1,'omitnan')};
+
    
     
     AMPdFF_analysis(i,1:7) = {mean(outputAMPdFF{1},'omitnan') mean(outputAMPdFF{2},'omitnan')...
@@ -699,9 +695,6 @@ AUCz_analysis_table = horzcat(idList,treatList,phaseList,AUCz_analysis_table);
 AUCz_analysis_table = sortrows(AUCz_analysis_table,{'Phase','Treatment'},{'ascend','descend'});
 auc_cueBase_table = cell2table(auc_cueBase_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
 auc_cueBase_table = horzcat(idList,treatList,phaseList,auc_cueBase_table);
-%% Tau Table %%
-tau_cueBase_table = cell2table(tau_cueBase_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew'});
-tau_cueBase_table = horzcat(idList,treatList,phaseList,tau_cueBase_table);
 %% Correct/Incorrect Stream Table %%
 master_correct_STREAMz = array2table(master_correct_STREAMz);
 master_correct_STREAMz = horzcat(idList,treatList,phaseList,master_correct_STREAMz);
@@ -892,7 +885,7 @@ if toPlot == 1
 end
 amp_cueBase_table = sortrows(amp_cueBase_table,{'Phase','Treatment'},{'ascend','descend'});
 auc_cueBase_table = sortrows(auc_cueBase_table,{'Phase','Treatment'},{'ascend','descend'});
-tau_cueBase_table = sortrows(tau_cueBase_table,{'Phase','Treatment'},{'ascend','descend'});
+
 
 prl_stream_analysis.acq1.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Acq1'),:);
 prl_stream_analysis.acq2.amplitude = amp_cueBase_table(strcmp(amp_cueBase_table.Phase,'Acq2'),:);
@@ -904,11 +897,7 @@ prl_stream_analysis.acq2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,
 prl_stream_analysis.rev1.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev1'),:);
 prl_stream_analysis.rev2.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev2'),:);
 prl_stream_analysis.rev3.auc = auc_cueBase_table(strcmp(auc_cueBase_table.Phase,'Rev3'),:);
-prl_stream_analysis.acq1.tau = tau_cueBase_table(strcmp(tau_cueBase_table.Phase,'Acq1'),:);
-prl_stream_analysis.acq2.tau = tau_cueBase_table(strcmp(tau_cueBase_table.Phase,'Acq2'),:);
-prl_stream_analysis.rev1.tau = tau_cueBase_table(strcmp(tau_cueBase_table.Phase,'Rev1'),:);
-prl_stream_analysis.rev2.tau = tau_cueBase_table(strcmp(tau_cueBase_table.Phase,'Rev2'),:);
-prl_stream_analysis.rev3.tau = tau_cueBase_table(strcmp(tau_cueBase_table.Phase,'Rev3'),:);
+
 
 prl_stream_analysis.acq1.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Acq1'),:);
 prl_stream_analysis.acq1.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Acq1'),:);
@@ -956,7 +945,6 @@ prl_stream_analysis.metadata.baseWindow = baseWindow;
 prl_stream_analysis.metadata.baseline = baseline;
 prl_stream_analysis.metadata.amp_window = amp_window;
 prl_stream_analysis.metadata.auc_window = auc_window;
-prl_stream_analysis.metadata.tau_window = tau_window;
 prl_stream_analysis.metadata.trimStart = t;
 prl_stream_analysis.metadata.downsample = N;
 prl_stream_analysis.metadata.Hz = sigHz;

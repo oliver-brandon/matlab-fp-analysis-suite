@@ -1,32 +1,37 @@
 clear; clc; close all;
-figSavePath = '/Volumes/CUDADRIVE/4-17-24/';
-saveFig = 1;
+figSavePath = '/Volumes/CUDADRIVE/';
+saveFig = 0;
 setBaseline = 1;
 baseAdjust = -2;
-BLOCKPATH = '/Volumes/CUDADRIVE/4-17-24/807_FR1-10_793_FR1-10';
+BLOCKPATH = '/Users/brandon/personal-drive/self-admin/food_sa/Cortical NE-DA/discrete-fr1/FR1-6 Discrete Cue-Lever-Reward/NE7F_FR1-6_298F_FR1-6';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
-STREAM_STORE1 = 'x405C';
-STREAM_STORE2 = 'x465C';
+channel = 1;
 
 % data = optoStimEpoch(data,10);
 % Creates reward epoc from offset instead of onset
-data.epocs.aReward.onset = data.epocs.aRw_.offset;
-data.epocs.aReward.offset = data.epocs.aRw_.onset;
-data.epocs.aReward.name = 'aReward';
-data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
-data.epocs.bReward.onset = data.epocs.bRw_.offset;
-data.epocs.bReward.offset = data.epocs.bRw_.onset;
-data.epocs.bReward.name = 'bReward';
-data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
+% data.epocs.aReward.onset = data.epocs.aRw_.offset;
+% data.epocs.aReward.offset = data.epocs.aRw_.onset;
+% data.epocs.aReward.name = 'aReward';
+% data.epocs.aReward.data = ones(height(data.epocs.aRw_.offset)) * 10;
+% data.epocs.bReward.onset = data.epocs.bRw_.offset;
+% data.epocs.bReward.offset = data.epocs.bRw_.onset;
+% data.epocs.bReward.name = 'bReward';
+% data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
 
-REF_EPOC = 'bReward'; % Stimulation event to center on
+REF_EPOC = 'aRL/'; % Stimulation event to center on
 
-TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-10 20]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
-BASELINE_PER = [-3 -1]; % baseline period before stim
+BASELINE_PER = [-10 -7]; % baseline period before stim
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
-
+if channel == 1
+    STREAM_STORE1 = 'x405A';
+    STREAM_STORE2 = 'x465A';
+elseif channel == 2
+    STREAM_STORE1 = 'x405C';
+    STREAM_STORE2 = 'x465C';
+end
 
 % Use TDTfilter to extract data around our epoc event
 % Using the 'TIME' parameter extracts data only from the time range around

@@ -10,23 +10,19 @@ VERSION = 'v2.0';
 % by changing the value of 'N' below.
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dual_fiber = 0; % 0 = no, single fiber. 1 = dual_fiber
-df_TTL = 1; % 1 = TTL1/A. 2 = TTL2/B 
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-Grab_Sensor = 'GrabDA'; % example: 'GrabDA4.4'
-ROI = 'NAc';
-t = 20; % first t seconds are discarded to remove LED on artifact
-N = 100; % downsample signal N times
-ISOS = 'x405A'; % set name of isosbestic signal
-Grab = 'x465A'; % set name of Grab signal
+t = 10; % first t seconds are discarded to remove LED on artifact
+N = 1000; % downsample signal N times
+channel = 2; % 1 = A, 2 = C
+session_durration = 3600;
 fontSize = 8; % font size for figure ylabels
 figureSize = [100,100,1500,800]; % Set the desired figure size
-figSnip = [1100, 1160];
+figSnip = [2000, 2060];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Grab_signalTest %s\n',VERSION)
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Users/brandon/My Drive (bloliv95@gmail.com)', 'Select a tank to plot');
+TANK_NAME = uigetdir('/Volumes/KINGSTON/FIBRE PHOTOMETRY - SYNAPSE', 'Select a tank to plot');
 if TANK_NAME == 0
     disp('Select a file to start!')
     return
@@ -35,23 +31,25 @@ end
 figsavepath = strcat(TANK_NAME,'/');
 [~,name,~] = fileparts(TANK_NAME);
 brokenID = strsplit(name,'_');
-if strcmp(ISOS,'x405A')
-    ID = brokenID(1);
-elseif strcmp(ISOS,'x405C')
-    ID = brokenID(3);
+if channel == 1
+    ISOS = 'x405A'; % set name of isosbestic signal
+    Grab = 'x465A'; % set name of Grab signal
+    ROI = 'DLS';
+    ID = brokenID(2);
+    Grab_Sensor = 'GrabDA'; % example: 'GrabDA4.4'
+elseif channel == 2
+    ISOS = 'x405C'; % set name of isosbestic signal
+    Grab = 'x465C'; % set name of Grab signal
+    ROI = 'NAc';
+    ID = brokenID(2);
+    Grab_Sensor = 'GrabDA'; % example: 'GrabDA4.4'
 else
     disp('Cannot find isosbestic signal. Check the naming and try again.')
 end
 
-if dual_fiber == 1 && df_TTL == 1
-    ID = brokenID(1);
-elseif dual_fiber == 1 && df_TTL == 2
-    ID = brokenID(4);
-else
-    disp('')
-end
+
 TITLE = strcat(ID,{' '},Grab_Sensor,{' '},ROI);
-data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams','epocs'});
+data = TDTbin2mat(TANK_NAME, 'T2', session_durration,'TYPE', {'streams','epocs'});
 ISOS_raw = data.streams.(ISOS).data;
 Grab_raw = data.streams.(Grab).data;
 
@@ -91,12 +89,12 @@ Y_dF_all = Grab_raw - Y_fit_all; %sF (units mV) is not dFF
 Grab_dFF = 100*(Y_dF_all)./Y_fit_all;
 std_dFF = std(double(Grab_dFF));
 Grab_dFF = detrend(Grab_dFF);
-Grab_dFF_z = zScore(Grab_dFF);
+Grab_dFF_z = zscore(Grab_dFF);
 
 
 % Converts raw mV isosbestic signal to dFF and zScore for plotting %
 ISOS_dFF = detrend(deltaFF(ISOS_raw));
-ISOS_dFF_z = zScore(ISOS_dFF);
+ISOS_dFF_z = zscore(ISOS_dFF);
 
 
 

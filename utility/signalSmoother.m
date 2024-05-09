@@ -1,6 +1,6 @@
 close all;
 clear smooth_sigs1 smooth_sigs2;
-adjust_only = 1;
+adjust_only = 0;
 if adjust_only == 1
     smooth_sigs1 = sigs;
     smooth_sigs2 = sigs;

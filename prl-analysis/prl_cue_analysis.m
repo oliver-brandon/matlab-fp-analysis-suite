@@ -5,19 +5,19 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-5 0]; % baseline signal for dFF/zscore
+baseline = [-5 -2]; % baseline signal for dFF/zscore
 amp_window = [0 1]; % time window to grab amplitude from
 auc_window = [0 2];
 t = 10; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-adjustBase = 0; % 1 = yes, 2 = no
-baseAdjust = -0.5;
+adjustBase = 1; % 1 = yes, 2 = no
+baseAdjust = -0.25;
 removeOutlierTrials = 0; % 1 = remove
 plotOmitted = 0; % 1 = plot
 removeFirstTrial = 1; % 1 = keep, 2 = remove
-dualFiber = 0; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
+dualFiber = 1; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir('/Users/brandon/My Drive/prl/PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
@@ -48,8 +48,8 @@ for i = 1:numFiles
     prl_phase = vertcat(prl_phase,tempPhase);
     load(filename)
     if dualFiber == 1
-        ISOS = 'x405A';
-        SIGNAL = 'x465A';
+        ISOS = 'x405C';
+        SIGNAL = 'x465C';
         if isfield(data.epocs,'St1_')
             cue = data.epocs.St1_.onset;
             cRew = data.epocs.cRewA.onset;
