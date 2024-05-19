@@ -950,26 +950,6 @@ prl_stream_analysis.metadata.downsample = N;
 prl_stream_analysis.metadata.Hz = sigHz;
 prl_stream_analysis.metadata.baseAdjust = baseAdjust;
 
-% sfn2023.AMP = AMPz_analysis_table;
-% sfn2023.AMP = sortrows(sfn2023.AMP,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.AUC = AUCz_analysis_table;
-% sfn2023.AUC = sortrows(sfn2023.AUC,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.correctLever = master_correct_STREAMz;
-% sfn2023.correctLever = sortrows(sfn2023.correctLever,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.incorrectLever = master_incorrect_STREAMz;
-% sfn2023.incorrectLever = sortrows(sfn2023.incorrectLever,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.cue = a_cue_STREAMz;
-% sfn2023.cue = sortrows(sfn2023.cue,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.cRew = master_cRew_STREAMz;
-% sfn2023.cRew = sortrows(sfn2023.cRew,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.cNoRew = master_cNoRew_STREAMz;
-% sfn2023.cNoRew = sortrows(sfn2023.cNoRew,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.iRew = master_iRew_STREAMz;
-% sfn2023.iRew = sortrows(sfn2023.iRew,{'Phase','Treatment'},{'ascend','descend'});
-% sfn2023.iNoRew = master_iNoRew_STREAMz;
-% sfn2023.iNoRew = sortrows(sfn2023.iNoRew,{'Phase','Treatment'},{'ascend','descend'});
-
-% save('../data-files/prl_stream_analysis.mat','prl_stream_analysis')
 
 toc
 
