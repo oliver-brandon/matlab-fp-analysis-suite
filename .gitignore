@@ -8,3 +8,7 @@ mat-stats/nerd-stats.txt
 tank2mat/untitled.m
 utility/VideoReplayStreamMARK2_Scroll.m
 dopamine-main
+functions/TDTbin2mat.m
+functions/TDTfilter.m
+functions/SEV2mat.m
+
