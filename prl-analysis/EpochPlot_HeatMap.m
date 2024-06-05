@@ -1,11 +1,11 @@
 clear; clc; close all;
-figSavePath = '/Volumes/CUDADRIVE/';
-saveFig = 0;
+figSavePath = '/Volumes/CUDADRIVE/MielnikCA/20240501_FibreTest/';
+saveFig = 1;
 setBaseline = 1;
 baseAdjust = -2;
-BLOCKPATH = '/Users/brandon/personal-drive/self-admin/food_sa/Cortical NE-DA/discrete-fr1/FR1-6 Discrete Cue-Lever-Reward/NE7F_FR1-6_298F_FR1-6';
+BLOCKPATH = '/Volumes/CUDADRIVE/MielnikCA/20240501_FibreTest/1212F_HL_20240501';
 data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
-channel = 1;
+channel = 2;
 
 % data = optoStimEpoch(data,10);
 % Creates reward epoc from offset instead of onset
@@ -18,11 +18,11 @@ channel = 1;
 % data.epocs.bReward.name = 'bReward';
 % data.epocs.bReward.data = ones(height(data.epocs.bRw_.offset)) * 20;
 
-REF_EPOC = 'aRL/'; % Stimulation event to center on
+REF_EPOC = 'St1/'; % Stimulation event to center on
 
-TRANGE = [-10 20]; %window size [start time relative to epoc onset, entire duration]
+TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
 ARANGE = [1 1];
-BASELINE_PER = [-10 -7]; % baseline period before stim
+BASELINE_PER = [-2 -1]; % baseline period before stim
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 if channel == 1
@@ -45,10 +45,10 @@ brokenID = strsplit(name,'_');
 if strcmp(STREAM_STORE1,'x405A')
     ID = brokenID(1);
     task = brokenID(2);
-    ROI = 'NAc';
+    ROI = 'DLS';
 elseif strcmp(STREAM_STORE1,'x405C')
-    ID = brokenID(3);
-    task = brokenID(4);
+    ID = brokenID(1);
+    task = brokenID(2);
     ROI = 'NAc';
 else
     disp('Cannot find isosbestic signal. Check the naming and try again.')

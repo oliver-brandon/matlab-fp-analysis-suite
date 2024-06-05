@@ -30,13 +30,13 @@ baselineZ_lever = [-3 -1];
 N = 10; %Downsample N times
 sigHz = 1017/N;
 minArrayLen = round(sigHz * (timeWindow + baseline));
-figure_savepath = '/Users/brandon/personal-drive/prl/GrabDA/cortex/figs/';
+figure_savepath = '/Users/brandon/personal-drive/prl/GrabDA/nac_jzl/nac2024cohort/figs/';
 % figure_savepath = '/Users/brandon/'; % for testing
 savetype = '.tif';
 VERSION = 'v2.1';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA/cortex',"Select a folder containing one or more files"); 
+myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA',"Select a folder containing one or more files"); 
 fprintf("prl_epoc_plotsaver %s\n",VERSION)
 tic
 if myDir == 0
@@ -245,7 +245,7 @@ for batch = 1:numFiles
             se_data = std(epoc_stream{i}, 0, 1) / sqrt(size(epoc_stream{i}, 1));
             dc_data = mean(mean_data);
             % Plot mean with blue line
-            plot(ts1, mean_data, 'b-', 'LineWidth', 3);
+            plot(ts1, mean_data, 'b-', 'LineWidth', 1);
             xlim([-baseline max(ts1)]);
             hold on
             
