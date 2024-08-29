@@ -1,5 +1,6 @@
 % clearvars -except data
 clear; clc; close all;
+withinSession = 1; % 1 = yes, 0 = no
 myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA',"Select a folder containing one or more files"); 
 
 if myDir == 0
@@ -22,20 +23,30 @@ for x = 1:numFiles
     animalID = str2double(regexp(animalID, '\d+', 'match'));
     % task = char(brokenID{2});
     % treatment = char(brokenID{3});
-    if isfield(data.epocs, 'St1_')
+    if withinSession == 0
+        if isfield(data.epocs, 'St1_')
+            cue = data.epocs.St1_.onset;
+            cRew = data.epocs.cRewA.onset;
+            cNoRew = data.epocs.cNoRewA.onset;
+            iRew = data.epocs.iRewA.onset;
+            iNoRew = data.epocs.iNoRewA.onset;
+        elseif isfield(data.epocs, 'St2_')
+            cue = data.epocs.St2_.onset;
+            cRew = data.epocs.cRewC.onset;
+            cNoRew = data.epocs.cNoRewC.onset;
+            iRew = data.epocs.iRewC.onset;
+            iNoRew = data.epocs.iNoRewC.onset;
+        end
+    elseif withinSession == 1
         cue = data.epocs.St1_.onset;
         cRew = data.epocs.cRewA.onset;
         cNoRew = data.epocs.cNoRewA.onset;
         iRew = data.epocs.iRewA.onset;
         iNoRew = data.epocs.iNoRewA.onset;
-    elseif isfield(data.epocs, 'St2_')
-        cue = data.epocs.St2_.onset;
-        cRew = data.epocs.cRewC.onset;
-        cNoRew = data.epocs.cNoRewC.onset;
-        iRew = data.epocs.iRewC.onset;
-        iNoRew = data.epocs.iNoRewC.onset;
+    else
+        disp('Indicate session type')
+        return
     end
-
 
     for i = 1:length(cRew)
         if cRew(i,1) == 0
@@ -76,9 +87,9 @@ for x = 1:numFiles
     trials = vertcat(cRew, cNoRew, iRew, iNoRew);
     trials = sortrows(trials, 1);
 
-    if length(trials) > 30
-        trials = trials(1:30,:);
-    end
+    % if length(trials) > 30
+    %     trials = trials(1:30,:);
+    % end
     nanRows = any(isnan(trials),2);
     trials = trials(~nanRows,:);
 
@@ -97,4 +108,4 @@ end
 % convert allTrials to a table and add column headers
 allTrials = array2table(allTrials, 'VariableNames', {'id', 'trial', 'choice', 'reward'});
 % save the table to a .csv file
-writetable(allTrials, 'allTrialsSfRev1VEH.csv')
+% writetable(allTrials, 'allTrialsSfRev1VEH.csv')
