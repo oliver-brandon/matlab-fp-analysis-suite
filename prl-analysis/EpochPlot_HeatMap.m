@@ -1,14 +1,15 @@
 clear; clc; close all;
-figSavePath = '/Volumes/CUDADRIVE/MielnikCA/20240501_FibreTest/';
-saveFig = 1;
-setBaseline = 1;
-baseAdjust = -2;
-BLOCKPATH = '/Volumes/CUDADRIVE/MielnikCA/20240501_FibreTest/1212F_HL_20240501';
-data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});
-channel = 2;
+figSavePath = '/path/to/save/'; % include trailing '/' at end of path
+saveFig = 0; % 1 = save, 0 = don't save
+setBaseline = 1; % 1 = yes, 0 = no (adjusts signals to zero indicated by baseAdjust)
+baseAdjust = -2; % seconds on x axis to adjust baseline to
+BLOCKPATH = 'path/to/data/folder'; % path to TDT data tank (folder containing TDT data)
+data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'}); % TDT function for extracting data to struct 'data'
+channel = 1; % 1 = mouse on A channel, 2 = mouse on C channel
+withinprl = 1; % 1 = yes, 0 = no (if yes, extracts within-session prl related data)
 
-% data = optoStimEpoch(data,10);
-% Creates reward epoc from offset instead of onset
+
+% % Creates reward epoc from offset instead of onset (leave commented out if not plotting self-admin data)
 % data.epocs.aReward.onset = data.epocs.aRw_.offset;
 % data.epocs.aReward.offset = data.epocs.aRw_.onset;
 % data.epocs.aReward.name = 'aReward';
@@ -21,8 +22,8 @@ channel = 2;
 REF_EPOC = 'St1/'; % Stimulation event to center on
 
 TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
-ARANGE = [1 1];
-BASELINE_PER = [-2 -1]; % baseline period before stim
+% ARANGE = [1 1]; % not used
+BASELINE_PER = [-2 -1]; % baseline period before epoc
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 if channel == 1
@@ -38,18 +39,19 @@ end
 % our epoc event. Use the 'VALUES' parameter to specify allowed values of
 % the REF_EPOC to extract.  For stream events, the chunks of data are 
 % stored in cell arrays structured as data.streams.(STREAM_STORE1).filtered
-data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE);  
-figPath = strcat(BLOCKPATH,'/');
-[~,name,~] = fileparts(BLOCKPATH);
-brokenID = strsplit(name,'_');
+data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE); % extracts data around epoc of interest 
+figPath = strcat(BLOCKPATH,'/'); % path to save figures
+[~,name,~] = fileparts(BLOCKPATH); % gets name of tank
+brokenID = strsplit(name,'_'); % splits tank name into parts separated by '_'
+% Edit below to have ID and task included in figure title
 if strcmp(STREAM_STORE1,'x405A')
-    ID = brokenID(1);
-    task = brokenID(2);
-    ROI = 'DLS';
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = 'DLS'; % Can change depending on ROI (used for figure title)
 elseif strcmp(STREAM_STORE1,'x405C')
-    ID = brokenID(1);
-    task = brokenID(2);
-    ROI = 'NAc';
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = 'NAc'; % Can change depending on ROI (used for figure title)
 else
     disp('Cannot find isosbestic signal. Check the naming and try again.')
 end
@@ -135,30 +137,25 @@ for i = 1:size(Y_dF_all,1)
     zall(i,:)=(Y_dF_all(i,:) - zb)/zsd; % Z score per bin
 end
 
+% Smoothes the z score signal traces
 zallSmooth = zeros(size(zall));
 for k = 1:height(zall)
     zallSmooth(k,:) = smoothdata(zall(k,:),'movmean',50);
 end
 meanZall_smooth = mean(zallSmooth);
 
-half = floor(height(zall)/2);
-if half == 1
-    zall_1st = zall(1,:);
-    zall_2nd = zall(2,:);
-    meanZall_1st = smoothdata(zall_1st,'movmean',50);
-    meanZall_2nd = smoothdata(zall_2nd,'movmean',50);
-elseif half > 1
-    zall_1st = zall(1:half,:);
-    zall_2nd = zall(half:end,:);
-    meanZall_1st = mean(zall_1st);
-    meanZall_2nd = mean(zall_2nd);
-    meanZall_1st = smoothdata(meanZall_1st,'movmean',50);
-    meanZall_2nd = smoothdata(meanZall_2nd,'movmean',50);
+% Specic variables for within-session prl signal extraction
+if withinprl == 1
+    zall_Smooth_acqlastFive = zallSmooth(26:30,:);
+    zall_Smooth_revfirstFive = zallSmooth(31:35,:);
+    zall_Smooth_acqfirstThirty = zallSmooth(1:30,:);
+    zall_Smooth_revAll = zallSmooth(31:end,:);
+    meanZall_Smooth_revfirstFive = (mean(zall_Smooth_revfirstFive))';
 else
-    disp('check number of epochs')
+    disp('')
 end
 
-
+% Baseline correction
 if setBaseline == 1
     idx = find(ts1>baseAdjust,1);
     for base = 1:height(zall)
@@ -252,6 +249,7 @@ ylabel('Trial', 'FontSize', 12);
 XX = [ts2, fliplr(ts2)];
 YY = [mean(zall)-zerror, fliplr(mean(zall)+zerror)];
 
+% Saves figure
 if saveFig == 1
     % Save figure 3 to saveFigPath
     file_name1 = char(strcat(figSavePath,TITLE,'.pdf'));
