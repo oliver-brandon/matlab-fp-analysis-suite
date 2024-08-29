@@ -4,20 +4,20 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
-baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-5 -2]; % baseline signal for dFF/zscore
-amp_window = [0 1]; % time window to grab amplitude from
-auc_window = [0 2];
-t = 10; % seconds to clip from start of streams
+baseWindow = 2; % baseline signal to include before TTL 
+baseline = [-2 -1]; % baseline signal for dFF/zscore
+amp_window = [0.5 1]; % time window to grab amplitude from
+auc_window = [0 5];
+t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 adjustBase = 1; % 1 = yes, 2 = no
-baseAdjust = -0.25;
+baseAdjust = -2;
 removeOutlierTrials = 0; % 1 = remove
 plotOmitted = 0; % 1 = plot
 removeFirstTrial = 1; % 1 = keep, 2 = remove
-dualFiber = 1; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
+dualFiber = 0; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir('/Users/brandon/My Drive/prl/PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
@@ -457,6 +457,11 @@ cueleverAUC = sortrows(cueleverAUC,{'Phase','Treatment'},{'ascend','descend'});
 
 cuelever_correctTable = rows2vars(cuelever_correctTable);
 cuelever_incorrectTable = rows2vars(cuelever_incorrectTable);
+
+prl_cue.cuebeforecorrect = cuelever_correctTable;
+prl_cue.cuebeforeincorrect = cuelever_incorrectTable;
+prl_cue.cueamp = cueleverAMP;
+prl_cue.cueauc = cueleverAUC;
 %% cue before lever fig %%
 f1 = figure;
 subplot(4,1,1)
@@ -647,4 +652,6 @@ xticks(1:2);
 xticklabels({'Correct','Incorrect'});
 
 toc
+
 NERD_STATS(toc,numFiles);
+clearvars -except prl_cue
