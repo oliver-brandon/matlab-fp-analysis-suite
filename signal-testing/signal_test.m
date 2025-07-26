@@ -7,17 +7,17 @@ close all;
 % by changing the value of 'N' below.
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figsavepath = '/Volumes/CUDADRIVE/signal-test-tanks/grab-da/20240808-NAc-GrabDA/'; % must include backslash at the end of the path
+figsavepath = '/Users/brandon/Desktop/'; % must include backslash at the end of the path
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-t = 5; % first t seconds are discarded to remove laser on artifact
-N = 10; % downsample signal N times
+t = 600; % first t seconds are discarded to remove laser on artifact (Default 30)
+N = 100; % downsample signal N times (Default 100)
 channel = 1; % 1 = mouse on A channel, 2 = mouse on C channel
-figSnip = [100, 160];
+figSnip = [2300, 2420];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir(pwd, 'Select a tank to plot');
+TANK_NAME = uigetdir('/Users/brandon/personal-drive/collaborations/yamanaka-cat-saliva', 'Select a tank to plot');
 [~,name,~] = fileparts(TANK_NAME);
 brokenID = strsplit(name,'_');
 if channel == 1
@@ -33,7 +33,7 @@ elseif channel == 2
 end
 
 TITLE = strcat(animalID," ",region);
-data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams'});
+data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams','epocs'});
 ISOS_raw = data.streams.(ISOS).data;
 SIGNAL_raw = data.streams.(SIGNAL).data;
 

@@ -1,6 +1,8 @@
 close all;
 clear smooth_sigs1 smooth_sigs2;
-adjust_only = 0;
+adjust_only = 1;
+zeroto = 0;
+
 if adjust_only == 1
     smooth_sigs1 = sigs;
     smooth_sigs2 = sigs;
@@ -12,35 +14,36 @@ else
             continue
         end
         smooth_sigs1(:,i) = smoothdata(sigs(:,i),'movmean',25);
-        smooth_sigs2(:,i) = smoothdata(sigs(:,i),'movmean',75);
+        smooth_sigs2(:,i) = smoothdata(sigs(:,i),'movmean',60);
     end
 end
 
-
+ts1 = -2 + (1:length(sigs)) / 1017*10;
+idx = find(ts1>zeroto,1);
 for j = 1:size(smooth_sigs1,2)
     % adjusts streams to baseline of zero at -0.5s %
-    if isnan(smooth_sigs1(1,j))
+    if isnan(smooth_sigs1(idx,j))
         continue
-    elseif smooth_sigs1(1,j) < 0
-        val = smooth_sigs1(1,j);
+    elseif smooth_sigs1(idx,j) < 0
+        val = smooth_sigs1(idx,j);
         diff = 0 - val;
         smooth_sigs1(1:end,j) = smooth_sigs1(1:end,j) + abs(diff);
-    elseif smooth_sigs1(1,j) > 0
-        val = smooth_sigs1(1,j);
+    elseif smooth_sigs1(idx,j) > 0
+        val = smooth_sigs1(idx,j);
         diff = 0 - val;
         smooth_sigs1(1:end,j) = smooth_sigs1(1:end,j) - abs(diff);
     end    
 end
 for j = 1:size(smooth_sigs2,2)
     % adjusts streams to baseline of zero at -0.5s %
-    if isnan(smooth_sigs2(1,j))
+    if isnan(smooth_sigs2(idx,j))
         continue
-    elseif smooth_sigs2(1,j) < 0
-        val = smooth_sigs2(1,j);
+    elseif smooth_sigs2(idx,j) < 0
+        val = smooth_sigs2(idx,j);
         diff = 0 - val;
         smooth_sigs2(1:end,j) = smooth_sigs2(1:end,j) + abs(diff);
-    elseif smooth_sigs2(1,j) > 0
-        val = smooth_sigs2(1,j);
+    elseif smooth_sigs2(idx,j) > 0
+        val = smooth_sigs2(idx,j);
         diff = 0 - val;
         smooth_sigs2(1:end,j) = smooth_sigs2(1:end,j) - abs(diff);
     end    

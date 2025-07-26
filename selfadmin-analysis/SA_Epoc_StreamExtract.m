@@ -3,23 +3,20 @@
 % Clear workspace and close existing figures.
 % Add data
 clear all; clc; close all;
-FR = 1; % Fixed ratio
+FR = 5; % Fixed ratio
 tanks2analyze = 2; % 1=batch, 2=single
 streamAorC = 1; % 1=465A, 2=465C
 % epoc = {'aHL/','bHL/'};
 
-remove_infusion_np = 0; % 1 = remove infusion nosepokes
-remove_free_inf = 1; % 1 = remove nosepokes from free infusion at start
+remove_infusion_np = 0; % 1 = remove infusion nosepokes from nosepoke epocs
+remove_free_inf = 0; % 1 = remove nosepokes from free infusion at start
 % epoc = {'aReward','bReward'}; % enter the epoc of interest (a and b)
 % epoc = {'aActiveRew','bActiveRew'};
 % epoc = {'aActiveTimeout','bActiveTimeout'};
-epoc = {'aRL/','bRL/'};
-TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duration]
+% epoc = {'aRL/','bRL/'}; 
+TRANGE = [-2 22]; %window size [start time relative to epoc onset, entire duration]
 BASELINE_PER = [-3 -1]; % baseline period before stim
 
-% epoc = {'aRw/','bRw/'};
-% TRANGE = [-2 22]; %window size [start time relative to epoc onset, entire duration]
-% BASELINE_PER = [-2 0]; % baseline period before stim
 
 if tanks2analyze == 1
     myDir = uigetdir; %gets directory%
@@ -30,7 +27,7 @@ if tanks2analyze == 1
     epoc_stream_store = cell(numFiles);
     disp("Starting batch tank extract...")
 elseif tanks2analyze == 2
-    myDir = uigetdir('/Users/brandon/personal-drive/self_admin/coc_sa/PrL-aIC/FR1-Cocaine/tanks');
+    myDir = uigetdir(pwd);
     numFiles = 1;
     epoc_stream_store = cell(numFiles);
     disp("Starting single tank extract...")

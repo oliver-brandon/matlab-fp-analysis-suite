@@ -3,15 +3,18 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
-baseWindow = 5; % baseline signal to include before TTL 
+baseWindow = 2; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore
-amp_window = [0 5]; % time window to grab amplitude from
-auc_window = [-1 timeWindow];
-t = 0; % seconds to clip from start of streams
+zeroto = -0.5;
+amp_window = [0 2]; % time window to grab amplitude from
+auc_window = [0 timeWindow];
+t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 removeOutlierTrials = 0; % 1 = remove
+dualFiber = 1; % 1 = dual fiber, 0 = single fiber
+dualFiberChannel = 2; % 1 = dual fiber channel A, 2 = dual fiber channel C
 figsavepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/cueByTrialFigs/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,6 +40,7 @@ allIDs = [];
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
+    fprintf('Analyzing %s (%d of %d)\n', name, i, numFiles)
     brokenID = strsplit(name,'_');
     tempID = cellstr(brokenID(1));
     tempPhase = cellstr(brokenID(2));
@@ -46,32 +50,48 @@ for i = 1:numFiles
     prl_phase = vertcat(prl_phase,tempPhase);
     load(filename)
     TITLE = strcat(tempID,{' '},tempPhase,{' '},tempTreat);
-    if isfield(data.streams, 'x405A')
-        ISOS = 'x405A';
-        SIGNAL = 'x465A';
-
-        cue = data.epocs.St1_.onset;
-        cRew = data.epocs.cRewA.onset;
-        cNoRew = data.epocs.cNoRewA.onset;
-        iRew = data.epocs.iRewA.onset;
-        iNoRew = data.epocs.iNoRewA.onset;
-        [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
-            cNoRew,iRew,iNoRew);
-        
-        
-    elseif isfield(data.streams, 'x405C')
-        ISOS = 'x405C';
-        SIGNAL = 'x465C';
-
-        cue = data.epocs.St2_.onset;
-        cRew = data.epocs.cRewC.onset;
-        cNoRew = data.epocs.cNoRewC.onset;
-        iRew = data.epocs.iRewC.onset;
-        iNoRew = data.epocs.iNoRewC.onset;
-        [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
-            cNoRew,iRew,iNoRew);
-        
+    if dualFiber == 1
+        if dualFiberChannel == 1
+            ISOS = 'x405A';
+            SIGNAL = 'x465A';
+        elseif dualFiberChannel == 2
+            ISOS = 'x405C';
+            SIGNAL = 'x465C';
+        end
+        if isfield(data.epocs, 'iNoRewA') || isfield(data.epocs, 'cRewA')
+            cue = data.epocs.St1_.onset;
+            cRew = data.epocs.cRewA.onset;
+            cNoRew = data.epocs.cNoRewA.onset;
+            iRew = data.epocs.iRewA.onset;
+            iNoRew = data.epocs.iNoRewA.onset;
+        elseif isfield(data.epocs, 'iNoRewC') || isfield(data.epocs, 'cRewC')
+            cue = data.epocs.St2_.onset;
+            cRew = data.epocs.cRewC.onset;
+            cNoRew = data.epocs.cNoRewC.onset;
+            iRew = data.epocs.iRewC.onset;
+            iNoRew = data.epocs.iNoRewC.onset;
+        end
+    elseif dualFiber == 0  
+        if isfield(data.streams, 'x405A')
+            ISOS = 'x405A';
+            SIGNAL = 'x465A';
+            cue = data.epocs.St1_.onset;
+            cRew = data.epocs.cRewA.onset;
+            cNoRew = data.epocs.cNoRewA.onset;
+            iRew = data.epocs.iRewA.onset;
+            iNoRew = data.epocs.iNoRewA.onset;   
+        elseif isfield(data.streams, 'x405C')
+            ISOS = 'x405C';
+            SIGNAL = 'x465C';
+            cue = data.epocs.St2_.onset;
+            cRew = data.epocs.cRewC.onset;
+            cNoRew = data.epocs.cNoRewC.onset;
+            iRew = data.epocs.iRewC.onset;
+            iNoRew = data.epocs.iNoRewC.onset;  
+        end
     end
+    [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
+        cNoRew,iRew,iNoRew);
     %time array used for all streams%
     session_time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
     ind = find(session_time>t,1);% find first index of when time crosses threshold
@@ -133,7 +153,7 @@ for i = 1:numFiles
         cueTT_raw(m,:) = cueTTSigRaw;
                 
     end
-    idx = find(ts1>-0.5,1);
+    idx = find(ts1>zeroto,1);
     for n = 1:height(cueTT_raw)
         allTrialNum = [allTrialNum;n];
         allIDs = [allIDs;i];
@@ -237,3 +257,4 @@ prlCueTrials = horzcat(allIDs,allTrialNum,allTrialVal,allCueTrials);
 
 toc
 NERD_STATS(toc,numFiles);
+[group1, group2, meansGroup1, meansGroup2] = separateTrialsById(prlCueTrials);

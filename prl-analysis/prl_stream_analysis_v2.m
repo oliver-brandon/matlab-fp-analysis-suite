@@ -11,13 +11,14 @@ t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-baseAdjust = -0.5; % adjust baseline of signals to 'baseAdjust' seconds
+baseAdjust = -2; % adjust baseline of signals to 'baseAdjust' seconds
 toPlot = 0; % 1 = plot figures, 0 = don't plot
 dualFiber = 0; % 1 = dual fiber, 0 = single fiber
+dFchannel = 1; % 1 = A Channel, 2 = C Channel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(...
-    'H:\My Drive\prl\GrabDA\cortex\mats-processed\Acq2-Rev1','Choose the .mat files you want to analyze.'...
+    '/Users/brandon/personal-drive/prl/GrabDA/dls-nac/prl/mats/All','Choose the .mat files you want to analyze.'...
     ); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
@@ -35,6 +36,7 @@ AMPdFF_analysis = cell(numFiles,7);
 AMPz_analysis = cell(numFiles,7);
 AUCdFF_analysis = cell(numFiles,7);
 AUCz_analysis = cell(numFiles,7);
+all_cue_STREAMz = cell(numFiles,1);
 master_cue_STREAMdFF = zeros(numFiles,epocArrayLen);
 master_cRew_STREAMdFF = zeros(numFiles,epocArrayLen);
 master_cNoRew_STREAMdFF = zeros(numFiles,epocArrayLen);
@@ -60,22 +62,37 @@ for i = 1:numFiles
 
     load(filename)
     if dualFiber == 1
-        if isfield(data.streams,'x405A')
-            ISOS = 'x405A';
-            SIGNAL = 'x465A';
+        if isfield(data.epocs,'iNoRewA')
+            if dFchannel == 1
+                ISOS = 'x405A';
+                SIGNAL = 'x465A';
+            elseif dFchannel == 2
+                ISOS = 'x405C';
+                SIGNAL = 'x465C';
+            else
+                error('"dFchannel" value invalid')
+                
+            end
             cue = data.epocs.St1_.onset;
             cRew = data.epocs.cRewA.onset;
             cNoRew = data.epocs.cNoRewA.onset;
             iRew = data.epocs.iRewA.onset;
             iNoRew = data.epocs.iNoRewA.onset;
-        elseif isfield(data.streams,'x405C')
-            ISOS = 'x405C';
-            SIGNAL = 'x465C';
-            cue = data.epocs.St1_.onset;
-            cRew = data.epocs.cRewA.onset;
-            cNoRew = data.epocs.cNoRewA.onset;
-            iRew = data.epocs.iRewA.onset;
-            iNoRew = data.epocs.iNoRewA.onset;
+        elseif isfield(data.epocs,'iNoRewC')
+            if dFchannel == 1
+                ISOS = 'x405A';
+                SIGNAL = 'x465A';
+            elseif dFchannel == 2
+                ISOS = 'x405C';
+                SIGNAL = 'x465C';
+            else
+                error('"dFchannel" value invalid')
+            end
+            cue = data.epocs.St2_.onset;
+            cRew = data.epocs.cRewC.onset;
+            cNoRew = data.epocs.cNoRewC.onset;
+            iRew = data.epocs.iRewC.onset;
+            iNoRew = data.epocs.iNoRewC.onset;
         else
             disp('No streams available.')
             break
@@ -427,15 +444,15 @@ for i = 1:numFiles
         stdCueBase_dFF = std(levers_dFF(n,baseSt:baseEn));
         levers_z(n,1:epocArrayLen) = (levers_dFF(n,1:epocArrayLen) - meanCueBase_dFF) / stdCueBase_dFF;
         % adjusts streams to baseline of zero at -0.5s %
-        % if levers_z(n,idx) < 0
-        %     val = levers_z(n,idx);
-        %     diff = 0 - val;
-        %     levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) + abs(diff);
-        % elseif levers_z(n,idx) > 0
-        %     val = levers_z(n,idx);
-        %     diff = 0 - val;
-        %     levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) - abs(diff);
-        % end
+        if levers_z(n,idx) < 0
+            val = levers_z(n,idx);
+            diff = 0 - val;
+            levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) + abs(diff);
+        elseif levers_z(n,idx) > 0
+            val = levers_z(n,idx);
+            diff = 0 - val;
+            levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) - abs(diff);
+        end
         % amp_cueBase(n,1) = max(levers_z(n,ampSt:ampEn));
         % % Calculate AUC above x=0 %
         % positive_indices = levers_z(n,:) > 0;
@@ -452,7 +469,7 @@ for i = 1:numFiles
         % auc_cueBase(n,1) = trapz(x_pos,y_pos);
         % auc_cueBase(n,1) = trapz(levers_z(n,aucSt:aucEn),ts1(1,aucSt:aucEn));
     end
-
+    session_lever_streams{i,1} = levers_z;
     sessionSTREAMSz{i,1} = mean(levers_z);
     trialNames = array2table(session_identifiers(2:2:end,2),'VariableNames',{'Trial_Type'});
     levers_z = array2table(levers_z);
@@ -621,6 +638,7 @@ for i = 1:numFiles
     master_iNoRew_STREAMraw(i,:) = mean(outputSTREAMSraw{5,1},1);
     master_correct_STREAMraw(i,:) = mean(outputSTREAMSraw{6,1},1);
     master_incorrect_STREAMraw(i,:) = mean(outputSTREAMSraw{7,1},1);
+   
 
     master_cue_STREAMdFF(i,:) = mean(outputSTREAMSdFF{1,1},1);
     master_cRew_STREAMdFF(i,:) = mean(outputSTREAMSdFF{2,1},1);
@@ -631,6 +649,10 @@ for i = 1:numFiles
     master_incorrect_STREAMdFF(i,:) = mean(outputSTREAMSdFF{7,1},1);
 
     master_cue_STREAMz(i,:) = mean(outputSTREAMSz{1,1},1);
+    master_cue_first(i,:) = mean(outputSTREAMSz{1,1}(1:9,:),1);
+    master_cue_second(i,:) = mean(outputSTREAMSz{1,1}(10:19,:),1);
+    master_cue_third(i,:) = mean(outputSTREAMSz{1,1}(20:end,:),1);
+    all_cue_STREAMz{i,1} = outputSTREAMSz{1,1};
     master_cRew_STREAMz(i,:) = mean(outputSTREAMSz{2,1},1);
     master_cNoRew_STREAMz(i,:) = mean(outputSTREAMSz{3,1},1);
     master_iRew_STREAMz(i,:) = mean(outputSTREAMSz{4,1},1);
@@ -682,7 +704,6 @@ idList = cell2table(IDs','VariableNames',{'ID'});
 phaseList = cell2table(phaseList','VariableNames',{'Phase'});
 treatList = cell2table(treatList','VariableNames',{'Treatment'});
 
-
 %% Amplitude Table %%
 AMPz_analysis_table = cell2table(AMPz_analysis,'VariableNames',{'Cue','cRew','cNoRew','iRew','iNoRew','Correct Lever','Incorrect Lever'});
 AMPz_analysis_table = horzcat(idList,treatList,phaseList,AMPz_analysis_table);
@@ -718,6 +739,12 @@ master_iNoRew_STREAMz = sortrows(master_iNoRew_STREAMz,{'Phase','Treatment'},{'a
 %% Epoc Stream Tables Baselined to Cue %%
 a_cue_STREAMz = array2table(master_cue_STREAMz);
 a_cue_STREAMz = horzcat(idList,phaseList,treatList,a_cue_STREAMz);
+a_cue_first = array2table(master_cue_first);
+a_cue_first = horzcat(idList,phaseList,treatList,a_cue_first);
+a_cue_second = array2table(master_cue_second);
+a_cue_second = horzcat(idList,phaseList,treatList,a_cue_second);
+a_cue_third = array2table(master_cue_third);
+a_cue_third = horzcat(idList,phaseList,treatList,a_cue_third);
 a_cRew_cueBase_STREAMz = array2table(master_cRew_cueBase_STREAMz);
 a_cRew_cueBase_STREAMz = horzcat(idList,phaseList,treatList,a_cRew_cueBase_STREAMz);
 a_cNoRew_cueBase_STREAMz = array2table(master_cNoRew_cueBase_STREAMz);
@@ -914,6 +941,9 @@ prl_stream_analysis.acq2.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STR
 prl_stream_analysis.acq2.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Acq2'),:);
 prl_stream_analysis.acq2.correct = master_correct_STREAMz(strcmp(master_correct_STREAMz.Phase,'Acq2'),:);
 prl_stream_analysis.acq2.incorrect = master_incorrect_STREAMz(strcmp(master_incorrect_STREAMz.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.cueFirst = a_cue_first(strcmp(a_cue_first.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.cueSecond = a_cue_second(strcmp(a_cue_second.Phase,'Acq2'),:);
+prl_stream_analysis.acq2.cueThird = a_cue_third(strcmp(a_cue_third.Phase,'Acq2'),:);
 
 prl_stream_analysis.rev1.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Rev1'),:);
 prl_stream_analysis.rev1.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Rev1'),:);
@@ -922,6 +952,9 @@ prl_stream_analysis.rev1.iRew = a_iRew_cueBase_STREAMz(strcmp(a_iRew_cueBase_STR
 prl_stream_analysis.rev1.iNoRew = a_iNoRew_cueBase_STREAMz(strcmp(a_iNoRew_cueBase_STREAMz.Phase,'Rev1'),:);
 prl_stream_analysis.rev1.correct = master_correct_STREAMz(strcmp(master_correct_STREAMz.Phase,'Rev1'),:);
 prl_stream_analysis.rev1.incorrect = master_incorrect_STREAMz(strcmp(master_incorrect_STREAMz.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.cueFirst = a_cue_first(strcmp(a_cue_first.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.cueSecond = a_cue_second(strcmp(a_cue_second.Phase,'Rev1'),:);
+prl_stream_analysis.rev1.cueThird = a_cue_third(strcmp(a_cue_third.Phase,'Rev1'),:);
 
 prl_stream_analysis.rev2.cue = a_cue_STREAMz(strcmp(a_cue_STREAMz.Phase,'Rev2'),:);
 prl_stream_analysis.rev2.cRew = a_cRew_cueBase_STREAMz(strcmp(a_cRew_cueBase_STREAMz.Phase,'Rev2'),:);
@@ -957,4 +990,5 @@ disp("Successfully analyzed .mat files")
 fprintf("Files analyzed: %d\n", numFiles)
 
 NERD_STATS(toc,numFiles);
-clearvars -except prl_stream_analysis
+animal_info = horzcat(idList, phaseList, treatList);
+clearvars -except prl_stream_analysis all_cue_STREAMz animal_info session_lever_streams

@@ -1,6 +1,6 @@
 % clearvars -except data
 clear; clc; close all;
-myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA',"Select a folder containing one or more files"); 
+myDir = uigetdir('/Users/brandon/personal-drive/prl',"Select a folder containing one or more files"); 
 
 if myDir == 0
     disp("Select a folder containing one or more files")
@@ -11,6 +11,7 @@ myFiles = myFiles(~startsWith({myFiles.name},{'.','..','_'}));
 myFiles = myFiles(endsWith({myFiles.name},{'.mat'}));
 numFiles = length(myFiles);
 allTrials = [];
+latencyAnalysis = [];
 for x = 1:numFiles
     fprintf('Loading file %d of %d...\n',x,length(myFiles))
     filename = fullfile(myDir, myFiles(x).name);
@@ -78,9 +79,10 @@ for x = 1:numFiles
     
     trials = vertcat(cRew, cNoRew, iRew, iNoRew);
     trials = sortrows(trials, 1);
-    % if length(cue) < 30
-    %     trials(2,:) = [];
-    % end
+    if length(cue) < 30
+        trials(2,:) = [];
+       
+    end
     if length(trials) > 30
         trials = trials(1:30,:);
     end
@@ -91,7 +93,13 @@ for x = 1:numFiles
     for j = 1:length(cue)
         cue2leverlatency(j,1) = trials(j,1) - cue(j,1);
     end
+    
+    latencyAnalysis(x,1) = animalID;
+    latencyAnalysis(x,2) = mean(cue2leverlatency);
+    latencyAnalysis(x,3) = mean(cue2leverlatency(1:15,1));
+    latencyAnalysis(x,4) = mean(cue2leverlatency(16:end,1));
 
+    
 
     % replace the onset times with the animalID
     for jj = 1:length(trials)
@@ -107,5 +115,6 @@ end
 
 % convert allTrials to a table and add column headers
 allTrials = array2table(allTrials, 'VariableNames', {'id', 'trial', 'choice', 'reward', 'cue2lever_latency'});
+latencyAnalysis = array2table(latencyAnalysis, 'VariableNames', {'id', 'latencyWhole', 'latencyFirst', 'latencySecond'});
 % save the table to a .csv file
 % writetable(allTrials, 'allTrials.csv')

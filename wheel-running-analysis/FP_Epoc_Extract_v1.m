@@ -21,7 +21,7 @@ clear all; clc; close all;
 warning('off','all');
 VERSION = 1.0;
 batch_analyze = 2;%1 = batch of tanks in folder, 2 = single tank analysis
-EPOC = 'runStop'; % Stimulation event to center on
+EPOC = 'runStart'; % Stimulation event to center on
 DLS_ISOS = 'x405A'; % name of the 405 store
 DLS_GRABDA = 'x465A'; % name of the 465 store
 NAc_ISOS = 'x405C'; % name of the 405 store
@@ -41,21 +41,23 @@ if batch_analyze == 1
         BLOCKPATH = fullfile(myDir, myFiles(i).name);
         fprintf("Extracting tank %d of %d...\n",i,numFiles)
         data = TDTbin2mat(BLOCKPATH, 'TYPE', {'streams','epocs'});
+
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%% Running Epoc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% makes new wheel data epocs %%
         %% epocs created in TDT OpenScope save in the notes of Cam1 %% 
         
         %combine index with timestamp data from Cam1 notes%
-        ind = double(data.epocs.Cam1.notes.index);
-        ts = data.epocs.Cam1.notes.ts;
+        ind = double(data.epocs.Cam2.notes.index);
+        ts = data.epocs.Cam2.notes.ts;
         var1 = [ind ts];
         
         %separate by index to make separate epocs%
         % onWheel = var1(ismember(var1(:,1),[1]),:);
         % offWheel = var1(ismember(var1(:,1),[2]),:);
-        runStart = var1(ismember(var1(:,1),[3]),:);
-        runStop = var1(ismember(var1(:,1),[4]),:);
+        runStart = var1(ismember(var1(:,1),[1]),:);
+        runStop = var1(ismember(var1(:,1),[2]),:);
         
         %extract time stamps%
         % onWheelTs = onWheel(:,2);
@@ -92,25 +94,25 @@ if batch_analyze == 1
         data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%   DLS   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
-        % below -ARTIFACT level, remove it from the data set.
-        art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
-        art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
-        good_DLS = ~art1_DLS & ~art2_DLS;
-        data.streams.(DLS_ISOS).filtered = data.streams.(DLS_ISOS).filtered(good_DLS);
-        art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
-        art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
-        good2_DLS = ~art1_DLS & ~art2_DLS;
-        data.streams.(DLS_GRABDA).filtered = data.streams.(DLS_GRABDA).filtered(good2_DLS);
-        numArtifacts_DLS = sum(~good_DLS) + sum(~good2_DLS);
-        % Applying a time filter to a uniformly sampled signal means that the
-        % length of each segment could vary by one sample.  Let's find the minimum
-        % length so we can trim the excess off before calculating the mean.
-        minLength1 = min(cellfun('prodofsize', data.streams.(DLS_ISOS).filtered));
-        minLength2 = min(cellfun('prodofsize', data.streams.(DLS_GRABDA).filtered));
-        data.streams.(DLS_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false);
-        data.streams.(DLS_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false);
-        allSignals_DLS = cell2mat(data.streams.(DLS_ISOS).filtered');
+        % % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
+        % % below -ARTIFACT level, remove it from the data set.
+        % art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
+        % art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
+        % good_DLS = ~art1_DLS & ~art2_DLS;
+        % data.streams.(DLS_ISOS).filtered = data.streams.(DLS_ISOS).filtered(good_DLS);
+        % art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
+        % art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
+        % good2_DLS = ~art1_DLS & ~art2_DLS;
+        % data.streams.(DLS_GRABDA).filtered = data.streams.(DLS_GRABDA).filtered(good2_DLS);
+        % numArtifacts_DLS = sum(~good_DLS) + sum(~good2_DLS);
+        % % Applying a time filter to a uniformly sampled signal means that the
+        % % length of each segment could vary by one sample.  Let's find the minimum
+        % % length so we can trim the excess off before calculating the mean.
+        % minLength1 = min(cellfun('prodofsize', data.streams.(DLS_ISOS).filtered));
+        % minLength2 = min(cellfun('prodofsize', data.streams.(DLS_GRABDA).filtered));
+        % data.streams.(DLS_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false);
+        % data.streams.(DLS_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false);
+        allSignals_DLS = data.streams.(DLS_ISOS).filtered';
         % downsample 10x and average 405 signal
         N = 10;
         F405_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
@@ -124,7 +126,7 @@ if batch_analyze == 1
         dcSignal1_DLS = mean(meanSignal1_DLS);
         
         % downsample 10x and average 465 signal
-        allSignals_DLS = cell2mat(data.streams.(DLS_GRABDA).filtered');
+        allSignals_DLS = data.streams.(DLS_GRABDA).filtered';
         F465_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
         for ii = 1:size(allSignals_DLS,1)
             F465_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
@@ -148,23 +150,23 @@ if batch_analyze == 1
         %%%%%%%%%%%%%%%%%%%%%%%%   NAc   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
         % below -ARTIFACT level, remove it from the data set.
-        art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
-        art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
-        good_NAc = ~art1_NAc & ~art2_NAc;
-        data.streams.(NAc_ISOS).filtered = data.streams.(NAc_ISOS).filtered(good_DLS);
-        art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
-        art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
-        good2_NAc = ~art1_NAc & ~art2_NAc;
-        data.streams.(NAc_GRABDA).filtered = data.streams.(NAc_GRABDA).filtered(good2_NAc);
-        numArtifacts_NAc = sum(~good_NAc) + sum(~good2_NAc);
-        % Applying a time filter to a uniformly sampled signal means that the
-        % length of each segment could vary by one sample.  Let's find the minimum
-        % length so we can trim the excess off before calculating the mean.
-        minLength1 = min(cellfun('prodofsize', data.streams.(NAc_ISOS).filtered));
-        minLength2 = min(cellfun('prodofsize', data.streams.(NAc_GRABDA).filtered));
-        data.streams.(NAc_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false);
-        data.streams.(NAc_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false);
-        allSignals_NAc = cell2mat(data.streams.(NAc_ISOS).filtered');
+        % art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
+        % art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
+        % good_NAc = ~art1_NAc & ~art2_NAc;
+        % data.streams.(NAc_ISOS).filtered = data.streams.(NAc_ISOS).filtered(good_DLS);
+        % art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
+        % art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
+        % good2_NAc = ~art1_NAc & ~art2_NAc;
+        % data.streams.(NAc_GRABDA).filtered = data.streams.(NAc_GRABDA).filtered(good2_NAc);
+        % numArtifacts_NAc = sum(~good_NAc) + sum(~good2_NAc);
+        % % Applying a time filter to a uniformly sampled signal means that the
+        % % length of each segment could vary by one sample.  Let's find the minimum
+        % % length so we can trim the excess off before calculating the mean.
+        % minLength1 = min(cellfun('prodofsize', data.streams.(NAc_ISOS).filtered));
+        % minLength2 = min(cellfun('prodofsize', data.streams.(NAc_GRABDA).filtered));
+        % data.streams.(NAc_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false);
+        % data.streams.(NAc_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false);
+        allSignals_NAc = data.streams.(NAc_ISOS).filtered';
         % downsample 10x and average 405 signal
         N = 10;
         F405_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
@@ -178,7 +180,7 @@ if batch_analyze == 1
         dcSignal1_NAc = mean(meanSignal1_NAc);
         
         % downsample 10x and average 465 signal
-        allSignals_NAc = cell2mat(data.streams.(NAc_GRABDA).filtered');
+        allSignals_NAc = data.streams.(NAc_GRABDA).filtered';
         F465_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
         for ii = 1:size(allSignals_NAc,1)
             F465_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);
@@ -213,15 +215,15 @@ elseif batch_analyze == 2
         %% epocs created in TDT OpenScope save in the notes of Cam1 %% 
         
         %combine index with timestamp data from Cam1 notes%
-        ind = double(data.epocs.Cam1.notes.index);
-        ts = data.epocs.Cam1.notes.ts;
+        ind = double(data.epocs.Cam2.notes.index);
+        ts = data.epocs.Cam2.notes.ts;
         var1 = [ind ts];
         
         %separate by index to make separate epocs%
         % onWheel = var1(ismember(var1(:,1),[1]),:);
         % offWheel = var1(ismember(var1(:,1),[2]),:);
-        runStart = var1(ismember(var1(:,1),[3]),:);
-        runStop = var1(ismember(var1(:,1),[4]),:);
+        runStart = var1(ismember(var1(:,1),[1]),:);
+        runStop = var1(ismember(var1(:,1),[2]),:);
         
         %extract time stamps%
         % onWheelTs = onWheel(:,2);
@@ -260,23 +262,24 @@ elseif batch_analyze == 2
         %%%%%%%%%%%%%%%%%%%%%%%%   DLS   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
         % below -ARTIFACT level, remove it from the data set.
-        art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
-        art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
-        good_DLS = ~art1_DLS & ~art2_DLS;
-        data.streams.(DLS_ISOS).filtered = data.streams.(DLS_ISOS).filtered(good_DLS);
-        art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
-        art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
-        good2_DLS = ~art1_DLS & ~art2_DLS;
-        data.streams.(DLS_GRABDA).filtered = data.streams.(DLS_GRABDA).filtered(good2_DLS);
-        numArtifacts_DLS = sum(~good_DLS) + sum(~good2_DLS);
-        % Applying a time filter to a uniformly sampled signal means that the
-        % length of each segment could vary by one sample.  Let's find the minimum
-        % length so we can trim the excess off before calculating the mean.
-        minLength1 = min(cellfun('prodofsize', data.streams.(DLS_ISOS).filtered));
-        minLength2 = min(cellfun('prodofsize', data.streams.(DLS_GRABDA).filtered));
-        data.streams.(DLS_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false);
-        data.streams.(DLS_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false);
-        allSignals_DLS = cell2mat(data.streams.(DLS_ISOS).filtered');
+        % art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
+        % art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false));
+        % good_DLS = ~art1_DLS & ~art2_DLS;
+        % data.streams.(DLS_ISOS).filtered = data.streams.(DLS_ISOS).filtered(good_DLS);
+        % art1_DLS = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
+        % art2_DLS = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false));
+        % good2_DLS = ~art1_DLS & ~art2_DLS;
+        % data.streams.(DLS_GRABDA).filtered = data.streams.(DLS_GRABDA).filtered(good2_DLS);
+        % numArtifacts_DLS = sum(~good_DLS) + sum(~good2_DLS);
+        % % Applying a time filter to a uniformly sampled signal means that the
+        % % length of each segment could vary by one sample.  Let's find the minimum
+        % % length so we can trim the excess off before calculating the mean.
+        % minLength1 = min(cellfun('prodofsize', data.streams.(DLS_ISOS).filtered));
+        % minLength2 = min(cellfun('prodofsize', data.streams.(DLS_GRABDA).filtered));
+        % data.streams.(DLS_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(DLS_ISOS).filtered, 'UniformOutput',false);
+        % data.streams.(DLS_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(DLS_GRABDA).filtered, 'UniformOutput',false);
+        % allSignals_DLS = cell2mat(data.streams.(DLS_ISOS).filtered');
+        allSignals_DLS = data.streams.(DLS_ISOS).data';
         % downsample 10x and average 405 signal
         N = 10;
         F405_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
@@ -290,7 +293,7 @@ elseif batch_analyze == 2
         dcSignal1_DLS = mean(meanSignal1_DLS);
         
         % downsample 10x and average 465 signal
-        allSignals_DLS = cell2mat(data.streams.(DLS_GRABDA).filtered');
+        allSignals_DLS = data.streams.(DLS_GRABDA).data';
         F465_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
         for ii = 1:size(allSignals_DLS,1)
             F465_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
@@ -314,23 +317,24 @@ elseif batch_analyze == 2
         %%%%%%%%%%%%%%%%%%%%%%%%   NAc   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Optionally remove artifacts. If any waveform is above ARTIFACT level, or
         % below -ARTIFACT level, remove it from the data set.
-        art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
-        art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
-        good_NAc = ~art1_NAc & ~art2_NAc;
-        data.streams.(NAc_ISOS).filtered = data.streams.(NAc_ISOS).filtered(good_DLS);
-        art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
-        art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
-        good2_NAc = ~art1_NAc & ~art2_NAc;
-        data.streams.(NAc_GRABDA).filtered = data.streams.(NAc_GRABDA).filtered(good2_NAc);
-        numArtifacts_NAc = sum(~good_NAc) + sum(~good2_NAc);
-        % Applying a time filter to a uniformly sampled signal means that the
-        % length of each segment could vary by one sample.  Let's find the minimum
-        % length so we can trim the excess off before calculating the mean.
-        minLength1 = min(cellfun('prodofsize', data.streams.(NAc_ISOS).filtered));
-        minLength2 = min(cellfun('prodofsize', data.streams.(NAc_GRABDA).filtered));
-        data.streams.(NAc_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false);
-        data.streams.(NAc_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false);
-        allSignals_NAc = cell2mat(data.streams.(NAc_ISOS).filtered');
+        % art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
+        % art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false));
+        % good_NAc = ~art1_NAc & ~art2_NAc;
+        % data.streams.(NAc_ISOS).filtered = data.streams.(NAc_ISOS).filtered(good_DLS);
+        % art1_NAc = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
+        % art2_NAc = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false));
+        % good2_NAc = ~art1_NAc & ~art2_NAc;
+        % data.streams.(NAc_GRABDA).filtered = data.streams.(NAc_GRABDA).filtered(good2_NAc);
+        % numArtifacts_NAc = sum(~good_NAc) + sum(~good2_NAc);
+        % % Applying a time filter to a uniformly sampled signal means that the
+        % % length of each segment could vary by one sample.  Let's find the minimum
+        % % length so we can trim the excess off before calculating the mean.
+        % minLength1 = min(cellfun('prodofsize', data.streams.(NAc_ISOS).filtered));
+        % minLength2 = min(cellfun('prodofsize', data.streams.(NAc_GRABDA).filtered));
+        % data.streams.(NAc_ISOS).filtered = cellfun(@(x) x(1:minLength1), data.streams.(NAc_ISOS).filtered, 'UniformOutput',false);
+        % data.streams.(NAc_GRABDA).filtered = cellfun(@(x) x(1:minLength2), data.streams.(NAc_GRABDA).filtered, 'UniformOutput',false);
+        % allSignals_NAc = cell2mat(data.streams.(NAc_ISOS).filtered');
+        allSignals_NAc = data.streams.(NAc_ISOS).data';
         % downsample 10x and average 405 signal
         N = 10;
         F405_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
@@ -344,7 +348,7 @@ elseif batch_analyze == 2
         dcSignal1_NAc = mean(meanSignal1_NAc);
         
         % downsample 10x and average 465 signal
-        allSignals_NAc = cell2mat(data.streams.(NAc_GRABDA).filtered');
+        allSignals_NAc = data.streams.(NAc_GRABDA).data';
         F465_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
         for ii = 1:size(allSignals_NAc,1)
             F465_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);

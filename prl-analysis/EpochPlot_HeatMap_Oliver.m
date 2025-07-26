@@ -1,0 +1,445 @@
+clear; clc; close all;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% To have proper graph titles, files need to be named ID_Task_ID_Task     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% Paramaters to Edit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figSavePath = '/Users/brandon/Desktop/'; % include trailing '/' at end of path
+saveFig = 0; % 1 = save, 0 = don't save
+plotSmooth = 1; % 1 = yes, 0 = no
+setBaseline = 1; % 1 = yes, 0 = no (adjusts signals to zero indicated by baseAdjust)
+baseAdjust = -2; % seconds on x axis to adjust baseline to
+smoothFactor = 50;
+TRANGE = [-2 12]; %window size [start time relative to epoc onset, entire duration]
+BASELINE_PER = [-3 -1]; % baseline period before epoc
+
+BLOCKPATH = '/Volumes/OLIVER/rDA-eCB/1790_Reinst1_Empty_NA'; % path to TDT data tank (folder containing TDT data)
+channel = 2; % 1 = mouse on A channel, 2 = mouse on C channel
+c1Color = 2; % color LED for channel 1, 1 = blue, 2 = green
+c2Color = 1; % color LED for channel 2, 1 = blue, 2 = green
+dualFiber = 1; % 1 = dual fiber, 0 = single fiber
+REF_EPOC = 'aRewPoke'; % Stimulation event to center on
+
+% PRL %
+withinprl = 0; % 1 = yes, 0 = no (if yes, extracts within-session prl related data)
+% Self Admin %
+selfadmin = 1; % 1 = yes, 0 = no (if yes, swaps onset with offset)
+FR = 1; % 0 = PR; Fixed-ratio (used to separate out rewarded and non-rewarded nosepokes)
+
+% ROI (For Figure Titles) %
+channel1ROI = 'rDA3m DLS';
+channel2ROI = 'rDA3m NAc';
+dataType = 1; % 1 = tank, 2 = mat
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% Leave Code Below As Is %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if dataType == 1
+    data = TDTbin2mat(BLOCKPATH, 'TYPE', {'epocs', 'streams'});% TDT function for extracting data to struct 'data'
+elseif dataType == 2
+    load(BLOCKPATH)
+end
+% Creates reward epoc from offset instead of onset (leave commented out if not plotting self-admin data)
+if selfadmin == 1
+    if isfield(data.epocs,'aRw_')
+        data.epocs.aReward.onset = data.epocs.aRw_.offset(1:end-1,:);
+        data.epocs.aReward.offset = data.epocs.aRw_.onset(2:end,:);
+        data.epocs.aReward.name = 'aReward';
+        data.epocs.aReward.data = ones(height(data.epocs.aReward.offset)) * 10;
+        if FR > 0
+            [rewardedNosepokes, nonrewardedNosepokes, timeoutNosepokes] = separateActivePoke(data.epocs.aRL_.offset(1:end-1,:), FR);
+        else
+            [rewardedNosepokes, nonrewardedNosepokes, timeoutNosepokes] = separatePRPoke(data.epocs.aRL_.offset(1:end-1,:), data.epocs.aReward.onset);
+        end
+        [data] = createEpoc(data, rewardedNosepokes, 'aRewPoke');
+        [data] = createEpoc(data, nonrewardedNosepokes, 'aNoRewPoke');
+        [data] = createEpoc(data, timeoutNosepokes, 'aTimeoutPoke');
+        
+    elseif isfield(data.epocs,'bRw_')
+        data.epocs.bReward.onset = data.epocs.bRw_.offset(1:end-1,:);
+        data.epocs.bReward.offset = data.epocs.bRw_.onset(2:end,:);
+        data.epocs.bReward.name = 'bReward';
+        data.epocs.bReward.data = ones(height(data.epocs.bReward.offset)) * 20;
+        if FR > 0
+            [rewardedNosepokes, nonrewardedNosepokes, timeoutNosepokes] = separateActivePoke(data.epocs.bRL_.offset(1:end-1,:), FR);
+        else
+            [rewardedNosepokes, nonrewardedNosepokes, timeoutNosepokes] = separatePRPoke(data.epocs.bRL_.offset(1:end-1,:), data.epocs.bReward.onset);
+        end
+        [data] = createEpoc(data, rewardedNosepokes, 'bRewPoke');
+        [data] = createEpoc(data, nonrewardedNosepokes, 'bNoRewPoke');
+        [data] = createEpoc(data, timeoutNosepokes, 'bTimeoutPoke');
+    end
+else
+    disp('')
+end
+
+
+% within-session-prl lever epoc
+if withinprl == 1
+    if ~isfield(data.epocs, 'CL1_')
+        levers = data.epocs.IL1_.onset;
+    elseif ~isfield(data.epocs, 'IL1_')
+        levers = data.epocs.CL1_.onset;
+    elseif isfield(data.epocs, 'CL1_') && isfield(data.epocs, 'IL1_')
+        correct = data.epocs.CL1_.onset;
+        incorrect = data.epocs.IL1_.onset;
+        levers = sort([correct;incorrect]);
+    else
+        disp('missing epocs')
+    end
+    data.epocs.levers.onset = levers;
+    data.epocs.levers.offset = levers + 1;
+    data.epocs.levers.name = 'levers';
+    data.epocs.levers.data = ones(height(levers),1);
+end
+
+
+ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
+ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
+if channel == 1 && c1Color == 1
+    STREAM_STORE1 = 'x405A';
+    STREAM_STORE2 = 'x465A';
+elseif channel == 1 && c1Color == 2
+    STREAM_STORE1 = 'x405A';
+    STREAM_STORE2 = 'x560A';
+elseif channel == 2 && c2Color == 1
+    STREAM_STORE1 = 'x405C';
+    STREAM_STORE2 = 'x465C';
+elseif channel == 2 && c2Color == 2
+    STREAM_STORE1 = 'x405C';
+    STREAM_STORE2 = 'x560C';
+end
+
+% Use TDTfilter to extract data around our epoc event
+% Using the 'TIME' parameter extracts data only from the time range around
+% our epoc event. Use the 'VALUES' parameter to specify allowed values of
+% the REF_EPOC to extract.  For stream events, the chunks of data are 
+% stored in cell arrays structured as data.streams.(STREAM_STORE1).filtered
+data = TDTfilter(data, REF_EPOC, 'TIME', TRANGE); % extracts data around epoc of interest 
+figPath = strcat(BLOCKPATH,'/'); % path to save figures
+[~,name,~] = fileparts(BLOCKPATH); % gets name of tank
+brokenID = strsplit(name,'_'); % splits tank name into parts separated by '_'
+% Edit below to have ID and task included in figure title
+if strcmp(STREAM_STORE1,'x405A') && dualFiber == 0
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = channel1ROI; % Can change depending on ROI (used for figure title)
+elseif strcmp(STREAM_STORE1,'x405C') && dualFiber == 0
+    ID = brokenID(3); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(4); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = channel2ROI; % Can change depending on ROI (used for figure title)
+elseif strcmp(STREAM_STORE1,'x405A') && dualFiber == 1
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = channel1ROI; % Can change depending on ROI (used for figure title)
+elseif strcmp(STREAM_STORE1,'x405C') && dualFiber == 1
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
+    ROI = channel2ROI; % Can change depending on ROI (used for figure title)
+else
+    disp('Cannot find isosbestic signal. Check the naming and try again.')
+end
+% remove any "/" from REF_EPOC
+REF_EPOC = strrep(REF_EPOC,'/','');
+TITLE = strcat(ID,{'-'},task,{'-'},ROI,{'-'},REF_EPOC);
+% Optionally remove artifacts. If any waveform is above ARTIFACT level, or
+% below -ARTIFACT level, remove it from the data set.
+art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT405), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
+art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT405), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false));
+good = ~art1 & ~art2;
+data.streams.(STREAM_STORE1).filtered = data.streams.(STREAM_STORE1).filtered(good);
+
+art1 = ~cellfun('isempty', cellfun(@(x) x(x>ARTIFACT465), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
+art2 = ~cellfun('isempty', cellfun(@(x) x(x<-ARTIFACT465), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false));
+good2 = ~art1 & ~art2;
+data.streams.(STREAM_STORE2).filtered = data.streams.(STREAM_STORE2).filtered(good2);
+
+numArtifacts = sum(~good) + sum(~good2);
+
+%%
+% Applying a time filter to a uniformly sampled signal means that the
+% length of each segment could vary by one sample.  Let's find the minimum
+% length so we can trim the excess off before calculating the mean.
+minLength1 = min(cellfun('prodofsize', data.streams.(STREAM_STORE1).filtered));
+minLength2 = min(cellfun('prodofsize', data.streams.(STREAM_STORE2).filtered));
+data.streams.(STREAM_STORE1).filtered = cellfun(@(x) x(1:minLength1), ...
+    data.streams.(STREAM_STORE1).filtered, 'UniformOutput',false);
+data.streams.(STREAM_STORE2).filtered = cellfun(@(x) x(1:minLength2), ...
+    data.streams.(STREAM_STORE2).filtered, 'UniformOutput',false);
+
+allSignals = cell2mat(data.streams.(STREAM_STORE1).filtered');
+
+% downsample 10x and average 405 signal
+N = 10;
+F405 = zeros(size(allSignals(:,1:N:end-N+1)));
+for ii = 1:size(allSignals,1)
+    F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
+end
+minLength1 = size(F405,2);
+
+% Create mean signal, standard error of signal, and DC offset of 405 signal
+meanSignal1 = mean(F405);
+stdSignal1 = std(double(F405))/sqrt(size(F405,1));
+dcSignal1 = mean(meanSignal1);
+
+% downsample 10x and average 465 signal
+allSignals = cell2mat(data.streams.(STREAM_STORE2).filtered');
+F465 = zeros(size(allSignals(:,1:N:end-N+1)));
+for ii = 1:size(allSignals,1)
+    F465(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
+end
+minLength2 = size(F465,2);
+
+% Create mean signal, standard error of signal, and DC offset of 465 signal
+meanSignal2 = mean(F465);
+stdSignal2 = std(double(F465))/sqrt(size(F465,1));
+dcSignal2 = mean(meanSignal2);
+
+%% Plot Epoch Averaged Response
+
+% Create the time vector for each stream store
+ts1 = TRANGE(1) + (1:minLength1) / data.streams.(STREAM_STORE1).fs*N;
+ts2 = TRANGE(1) + (1:minLength2) / data.streams.(STREAM_STORE2).fs*N;
+
+% Subtract DC offset to get signals on top of one another
+meanSignal1 = meanSignal1 - dcSignal1;
+meanSignal2 = meanSignal2 - dcSignal2;
+
+bls = polyfit(F465(1:end), F405(1:end), 1);
+Y_fit_all = bls(1) .* F405 + bls(2);
+Y_dF_all = F465 - Y_fit_all;
+
+zall = zeros(size(Y_dF_all));
+for i = 1:size(Y_dF_all,1)
+    ind = ts2(1,:) < BASELINE_PER(2) & ts2(1,:) > BASELINE_PER(1);
+    zb = mean(Y_dF_all(i,ind)); % baseline period mean (-10sec to -6sec)
+    zsd = std(Y_dF_all(i,ind)); % baseline period stdev
+    zall(i,:)=(Y_dF_all(i,:) - zb)/zsd; % Z score per bin
+end
+
+% Smoothes the z score signal traces
+zallSmooth = zeros(size(zall));
+for k = 1:height(zall)
+    zallSmooth(k,:) = smoothdata(zall(k,:),'movmean',smoothFactor);
+end
+meanZall_smooth = mean(zallSmooth);
+
+% Baseline correction for smoothed data
+if setBaseline == 1
+    idx = find(ts1>baseAdjust,1);
+    for base = 1:height(zall)
+        if zallSmooth(base,idx) < 0
+            val = zallSmooth(base,idx);
+            diff = 0 - val;
+            zallSmooth(base,:) = zallSmooth(base,:) + abs(diff);
+        elseif zallSmooth(base,idx) > 0
+            val = zallSmooth(base,idx);
+            diff = 0 - val;
+            zallSmooth(base,:) = zallSmooth(base,:) - abs(diff);
+        end
+    end
+    disp('Baseline correction applied to smoothed signals')
+else
+    disp('No baseline correction applied to smoothed signals')
+end
+
+% Specic variables for within-session prl signal extraction
+if withinprl == 1
+    zall_Smooth_acqlastFive = mean(zallSmooth(26:30,:))';
+    zall_Smooth_revfirstFive = mean(zallSmooth(31:35,:))';
+    zall_Smooth_acqfirstThirty = mean(zallSmooth(1:30,:))';
+    zall_Smooth_acqfirstFive = mean(zallSmooth(1:5,:))';
+    zall_Smooth_revAll = mean(zallSmooth(31:end,:))';
+    zall_Smooth_revfirstFive = (mean(zall_Smooth_revfirstFive))';
+else
+    disp('')
+end
+
+% Baseline correction
+if setBaseline == 1
+    idx = find(ts1>baseAdjust,1);
+    for base = 1:height(zall)
+        if zall(base,idx) < 0
+            val = zall(base,idx);
+            diff = 0 - val;
+            zall(base,:) = zall(base,:) + abs(diff);
+        elseif zall(base,idx) > 0
+            val = zall(base,idx);
+            diff = 0 - val;
+            zall(base,:) = zall(base,:) - abs(diff);
+        end
+    end
+    disp('Baseline correction applied')
+else
+    disp('No baseline correction applied')
+end
+
+
+
+if plotSmooth == 0
+    % Standard error of the z-score
+    meanZall = mean(zall);
+    zerror = std(zall)/sqrt(size(zall,1));
+    
+    % Plot heat map
+    subplot(3,1,2);
+    imagesc(ts2, 1, zall);
+    colormap('jet'); % c1 = colorbar; 
+    title(sprintf('Z-Score Heat Map', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14);
+    ylabel('Trials', 'FontSize', 12);
+    
+    % Fill band values for second subplot. Doing here to scale onset bar
+    % correctly
+    XX = [ts2, fliplr(ts2)];
+    YY = [mean(zall)-zerror, fliplr(mean(zall)+zerror)];
+    
+    subplot(3,1,3)
+    plot(ts2, mean(zall), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',12)
+    ylabel('Z-score', 'FontSize', 12)
+    title(sprintf('465 nm Z-Score', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+    %c2 = colorbar;
+    %%
+    figure(2)
+    plot(ts2, zall)
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',12)
+    ylabel('Z-score', 'FontSize', 12)
+    title(sprintf('465 nm Z-Score', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+    
+    %%
+    f3 = figure(3);
+    subplot(2,3,[1,2,4,5])
+    plot(ts2, mean(zall), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    h = fill(XX, YY, 'b');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',18)
+    ylabel('Z-score +/- SEM', 'FontSize', 18)
+    title(TITLE, 'FontSize', 18);
+    box off
+    
+    subplot(2,3,6);
+    imagesc(ts2, 1, zall);
+    colormap('jet'); colorbar; 
+    title(sprintf('Z-Score/Trial', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 16);
+    xlabel('Time, s', 'FontSize', 12);
+    ylabel('Trial', 'FontSize', 12);
+    
+    % Fill band values for second subplot. Doing here to scale onset bar
+    % correctly
+    XX = [ts2, fliplr(ts2)];
+    YY = [mean(zall)-zerror, fliplr(mean(zall)+zerror)];
+    
+    % Saves figure
+    if saveFig == 1
+        % Save figure 3 to saveFigPath
+        file_name1 = char(strcat(figSavePath,TITLE,'.pdf'));
+        orient(f3,'landscape');
+        print(f3,file_name1,'-dpdf','-vector','-bestfit','');
+    else
+        disp('Figure not saved')
+    end
+elseif plotSmooth == 1
+    % Standard error of the z-score
+    meanZall = mean(zallSmooth);
+    zerror = std(zallSmooth)/sqrt(size(zallSmooth,1));
+    
+    % Plot heat map
+    subplot(3,1,2);
+    imagesc(ts2, 1, zall);
+    colormap('jet'); % c1 = colorbar; 
+    title(sprintf('Z-Score Heat Map', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14);
+    ylabel('Trials', 'FontSize', 12);
+    
+    % Fill band values for second subplot. Doing here to scale onset bar
+    % correctly
+    XX = [ts2, fliplr(ts2)];
+    YY = [mean(zallSmooth)-zerror, fliplr(mean(zallSmooth)+zerror)];
+    
+    subplot(3,1,3)
+    plot(ts2, mean(zallSmooth), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    h = fill(XX, YY, 'r');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',12)
+    ylabel('Z-score', 'FontSize', 12)
+    title(sprintf('465 nm Z-Score', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+    %c2 = colorbar;
+    %%
+    figure(2)
+    plot(ts2, zallSmooth)
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',12)
+    ylabel('Z-score', 'FontSize', 12)
+    title(sprintf('465 nm Z-Score', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 14)
+    
+    %%
+    f3 = figure(3);
+    subplot(2,3,[1,2,4,5])
+    plot(ts2, mean(zallSmooth), 'color',[0.8500, 0.3250, 0.0980], 'LineWidth', 3); hold on;
+    line([0 0], [min(YY*1.5), max(YY*1.5)], 'Color', [.7 .7 .7], 'LineWidth', 2)
+    
+    h = fill(XX, YY, 'b');
+    set(h, 'facealpha',.25,'edgecolor','none')
+    
+    % Finish up the plot
+    axis tight
+    xlabel('Time, s','FontSize',18)
+    ylabel('Z-score +/- SEM', 'FontSize', 18)
+    title(TITLE, 'FontSize', 18);
+    box off
+    
+    subplot(2,3,6);
+    imagesc(ts2, 1, zallSmooth);
+    colormap('jet'); colorbar; 
+    title(sprintf('Z-Score/Trial', ...
+        numel(data.streams.(STREAM_STORE1).filtered), numArtifacts),'FontSize', 16);
+    xlabel('Time, s', 'FontSize', 12);
+    ylabel('Trial', 'FontSize', 12);
+    
+    % Fill band values for second subplot. Doing here to scale onset bar
+    % correctly
+    XX = [ts2, fliplr(ts2)];
+    YY = [mean(zallSmooth)-zerror, fliplr(mean(zallSmooth)+zerror)];
+    
+    % Saves figure
+    if saveFig == 1
+        % Save figure 3 to saveFigPath
+        file_name1 = char(strcat(figSavePath,TITLE,'.pdf'));
+        orient(f3,'landscape');
+        print(f3,file_name1,'-dpdf','-vector','-bestfit','');
+    else
+        disp('Figure not saved')
+    end
+end

@@ -1,6 +1,6 @@
 % clearvars -except data
 clear; clc; close all;
-withinSession = 1; % 1 = yes, 0 = no
+withinSession = 0; % 1 = yes, 0 = no
 myDir = uigetdir('/Users/brandon/personal-drive/prl/GrabDA',"Select a folder containing one or more files"); 
 
 if myDir == 0
@@ -22,7 +22,7 @@ for x = 1:numFiles
     % get animal ID and remove any characters from the ID number
     animalID = str2double(regexp(animalID, '\d+', 'match'));
     % task = char(brokenID{2});
-    % treatment = char(brokenID{3});
+    treatment = char(brokenID{3});
     if withinSession == 0
         if isfield(data.epocs, 'St1_')
             cue = data.epocs.St1_.onset;
@@ -87,9 +87,9 @@ for x = 1:numFiles
     trials = vertcat(cRew, cNoRew, iRew, iNoRew);
     trials = sortrows(trials, 1);
 
-    % if length(trials) > 30
-    %     trials = trials(1:30,:);
-    % end
+    if length(trials) > 30
+        trials = trials(1:30,:);
+    end
     nanRows = any(isnan(trials),2);
     trials = trials(~nanRows,:);
 
@@ -97,15 +97,24 @@ for x = 1:numFiles
     for jj = 1:length(trials)
         trials(jj,1) = animalID;
     end
-    
+    dose = [];
+    for kk = 1:height(trials)
+        if strcmp(treatment, 'VEH')
+            dose(kk,1) = 0;
+        elseif strcmp(treatment, 'JZL8')
+            dose(kk,1) = 8;
+        elseif strcmp(treatment, 'JZL18')
+            dose(kk,1) = 18;
+        end
+    end
     
 
     % insert column between 1 and 2 with trial numbers
-    trials = horzcat(trials(:,1), (1:length(trials))', trials(:,2:3));
+    trials = horzcat(trials(:,1), dose, (1:length(trials))', trials(:,2:3));
     allTrials = vertcat(allTrials, trials);
 end
 
 % convert allTrials to a table and add column headers
-allTrials = array2table(allTrials, 'VariableNames', {'id', 'trial', 'choice', 'reward'});
+allTrials = array2table(allTrials, 'VariableNames', {'id', 'treatment', 'trial', 'choice', 'reward'});
 % save the table to a .csv file
 % writetable(allTrials, 'allTrialsSfRev1VEH.csv')

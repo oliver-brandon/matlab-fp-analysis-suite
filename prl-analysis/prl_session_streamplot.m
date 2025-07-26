@@ -2,9 +2,9 @@ clear all; close all;
 warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-timeWindow = 15; % the number of seconds after the onset of a TTL to analyze
-baseWindow = 5; % baseline signal to include before TTL 
-baseline = [3 1];
+timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
+baseWindow = 2; % baseline signal to include before TTL 
+baseline = [2 1];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
 sigHz = 1017/N;
@@ -14,7 +14,7 @@ zMax = 30;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Prompt the user to select a .mat file using uigetfile
-[file, path] = uigetfile('*.mat', 'Select .mat file to load');
+[file, path] = uigetfile('/Users/brandon/personal-drive/prl/GrabDA/dls-nac/prl/mats/*.mat', 'Select .mat file to load');
 if file == 0
     disp('Select a .mat file to start')
     return
@@ -31,7 +31,7 @@ if ischar(file)
     disp(['Loaded ' file]);
 end
 
-if isfield(data.streams, 'x405A')
+if isfield(data.epocs, 'cRewA')
     ISOS = 'x405A';
     SIGNAL = 'x465A';
     %time array used for all streams%
@@ -121,7 +121,7 @@ if isfield(data.streams, 'x405A')
         cueAMP(e,:) = max(SIGNAL_z);
         % cueAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
     end
-else
+elseif isfield(data.epocs, 'cRewC')
     ISOS = 'x405C';
     SIGNAL = 'x465C';
     %time array used for all streams%
@@ -205,6 +205,30 @@ else
         cueSTREAM(e,:) = SIGNAL_z(1:epocArrayLen);
         cueAMP(e,:) = max(SIGNAL_z);
         cueAUC(e,:) = trapz(SIGNAL_time,SIGNAL_z);
+    end
+end
+leverSessionSTREAMs = sessionSTREAM(2:2:end,:);
+idx = find(ts1>(-baseWindow),1);
+for ii = 1:height(leverSessionSTREAMs)
+    if leverSessionSTREAMs(ii,idx) < 0
+        val = leverSessionSTREAMs(ii,idx);
+        diff = 0 - val;
+        leverSessionSTREAMs(ii,1:epocArrayLen) = leverSessionSTREAMs(ii,1:epocArrayLen) + abs(diff);
+    elseif leverSessionSTREAMs(ii,idx) > 0
+        val = leverSessionSTREAMs(ii,idx);
+        diff = 0 - val;
+        leverSessionSTREAMs(ii,1:epocArrayLen) = leverSessionSTREAMs(ii,1:epocArrayLen) - abs(diff);
+    end
+end
+for ii = 1:height(cueSTREAM)
+    if cueSTREAM(ii,idx) < 0
+        val = cueSTREAM(ii,idx);
+        diff = 0 - val;
+        cueSTREAM(ii,1:epocArrayLen) = cueSTREAM(ii,1:epocArrayLen) + abs(diff);
+    elseif cueSTREAM(ii,idx) > 0
+        val = cueSTREAM(ii,idx);
+        diff = 0 - val;
+        cueSTREAM(ii,1:epocArrayLen) = cueSTREAM(ii,1:epocArrayLen) - abs(diff);
     end
 end
 % Generate a colormap for the heatmap

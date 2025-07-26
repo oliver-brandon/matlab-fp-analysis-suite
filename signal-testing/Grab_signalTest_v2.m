@@ -13,11 +13,11 @@ VERSION = 'v2.0';
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
 t = 10; % first t seconds are discarded to remove LED on artifact
 N = 1000; % downsample signal N times
-channel = 2; % 1 = A, 2 = C
+channel = 1; % 1 = A, 2 = C
 session_durration = 3600;
 fontSize = 8; % font size for figure ylabels
 figureSize = [100,100,1500,800]; % Set the desired figure size
-figSnip = [2000, 2060];
+figSnip = [200, 300];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Grab_signalTest %s\n',VERSION)

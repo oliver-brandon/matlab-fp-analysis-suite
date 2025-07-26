@@ -13,13 +13,13 @@
 % Turns TDT tanks into .mat files freeing up storage space and speeding up
 % analyses significantly. For instructions, check out the README.
 
-myDir = uigetdir('E:\Google Drive\optomouse-prime','Choose the tank(s) you want to save.'); %gets directory%
+myDir = uigetdir(pwd,'Choose the tank(s) you want to save.'); %gets directory%
 disp('Choose a folder containing one or more tanks that you wish to save.')
 if myDir == 0
     disp("Select a tank to start")
     return
 end
-savDir = uigetdir('E:\Google Drive\optomouse-prime','Choose where you want to save the .mat(s).'); %gets directory%
+savDir = uigetdir(myDir,'Choose where you want to save the .mat(s).'); %gets directory%
 disp('Choose a save location.')
 if savDir == 0
     disp("Select a valid save directory")
@@ -29,7 +29,7 @@ end
 tic
 myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
-myFiles = myFiles(~endsWith({myFiles.name}, {'.pdf'}));
+myFiles = myFiles(~endsWith({myFiles.name}, {'.pdf','.m','.prism','.xlsx'}));
 numFiles = length(myFiles);
 totFiles = numFiles; % variable to track how many files actually get saved
 for i = 1:numFiles

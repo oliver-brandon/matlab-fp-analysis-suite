@@ -3,20 +3,22 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
-baseWindow = 5; % baseline signal to include before TTL 
+baseWindow = 2; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
-amp_window = [0 1]; % time window to grab amplitude from
+amp_window = [0 timeWindow]; % time window to grab amplitude from
 auc_window = [0 timeWindow];
-baseAdjust = -0.5;
+baseAdjust = -2;
+smoothFactor = 50;
 t = 5; % seconds to clip from start of streams
-N = 100; %Downsample N times
+N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 myDir = uigetdir(...
-    '/Users/brandon/My Drive (bloliv95@gmail.com)/prl/PRL_GRABDA/test','Choose the .mat files you want to analyze.'...
+    '/Users/brandon/personal-drive/prl/jzl-manuscript/manuscript-data','Choose the .mat files you want to analyze.'...
     ); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
@@ -54,32 +56,14 @@ for i = 1:numFiles
     IDs{i} = cellstr(strtrim(brokenID{1}));
     phaseList{i} = cellstr(strtrim(brokenID{2}));
     treatList{i} = cellstr(strtrim(brokenID{3}));
-
+    fprintf("Analyzing file %d of %d...\n",i,numFiles)
     load(filename)
 
 
-    if isfield(data.streams, 'x405A')
-        ISOS = 'x405A';
-        SIGNAL = 'x465A';
-
-        cue = data.epocs.St1_.onset;
-        cRew = data.epocs.cRewA.onset;
-        cNoRew = data.epocs.cNoRewA.onset;
-        iRew = data.epocs.iRewA.onset;
-        iNoRew = data.epocs.iNoRewA.onset;
-        if ~isfield(data.epocs,'CL1_')
-            Correct = 0;
-        else
-            Correct = data.epocs.CL1_.onset;
-        end
-        if ~isfield(data.epocs,'IL1_')
-            Incorrect = 0;
-        else
-            Incorrect = data.epocs.IL1_.onset;
-        end
-    elseif isfield(data.streams,'x405C')
+    if isfield(data.epocs, 'cRewC') || isfield(data.epocs, 'iNoRewC')
         ISOS = 'x405C';
         SIGNAL = 'x465C';
+
         cue = data.epocs.St2_.onset;
         cRew = data.epocs.cRewC.onset;
         cNoRew = data.epocs.cNoRewC.onset;
@@ -94,6 +78,24 @@ for i = 1:numFiles
             Incorrect = 0;
         else
             Incorrect = data.epocs.IL2_.onset;
+        end
+    elseif isfield(data.epocs,'cRewA') || isfield(data.epocs, 'iNoRewA')
+        ISOS = 'x405A';
+        SIGNAL = 'x465A';
+        cue = data.epocs.St1_.onset;
+        cRew = data.epocs.cRewA.onset;
+        cNoRew = data.epocs.cNoRewA.onset;
+        iRew = data.epocs.iRewA.onset;
+        iNoRew = data.epocs.iNoRewA.onset;
+        if ~isfield(data.epocs,'CL1_')
+            Correct = 0;
+        else
+            Correct = data.epocs.CL1_.onset;
+        end
+        if ~isfield(data.epocs,'IL1_')
+            Incorrect = 0;
+        else
+            Incorrect = data.epocs.IL1_.onset;
         end
     end
     [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
@@ -172,13 +174,16 @@ for i = 1:numFiles
             epocSig_z(k,1:epocArrayLen) = epocSig_z(k,1:epocArrayLen) - abs(diff);
         end
     end
-
+    epocSig_z_smooth = zeros(size(epocSig_z));
+    for z = 1:height(epocSig_z)
+        epocSig_z_smooth(z,:) = smoothdata(epocSig_z(z,:),'movmean',smoothFactor);
+    end
     %% Amplitude/AUC %%
     amp = [];
     auc = [];
-    for l = 1:height(epocSig_z)
-        amp(l,1) = calculateAMP(epocSig_z(l,ampSt:ampEn));
-        auc(l,1) = calculateAUC(epocSig_z(l,aucSt:aucEn),ts1);
+    for l = 1:height(epocSig_z_smooth)
+        amp(l,1) = calculateAMP(epocSig_z_smooth(l,ampSt:ampEn));
+        auc(l,1) = calculateAUC(epocSig_z_smooth(l,aucSt:aucEn),ts1(aucSt:aucEn));
 
     end
     cueIdx = find(session_identifiers(:,2) == 0);
@@ -209,25 +214,25 @@ for i = 1:numFiles
     numRows_lev = height(levIdx);
     id_cue = repmat({id},numRows_cue,1);
     id_lev = repmat({id},numRows_lev,1);
-    id_cue = table(id_cue,'VariableNames',{'ID'});
-    id_lev = table(id_lev,'VariableNames',{'ID'});
+    id_cue = cell2table(id_cue,'VariableNames',{'ID'});
+    id_lev = cell2table(id_lev,'VariableNames',{'ID'});
     idTable_cue = [idTable_cue;id_cue];
     idTable_lev = [idTable_lev;id_lev];
     
     
     tmpphase_cue = repmat({phase},numRows_cue,1);
-    tmpphase_cue = table(tmpphase_cue,'VariableNames',{'Phase'});
+    tmpphase_cue = cell2table(tmpphase_cue,'VariableNames',{'Phase'});
     phaseTable_cue = [phaseTable_cue;tmpphase_cue];
     tmpphase_lev = repmat({phase},numRows_lev,1);
-    tmpphase_lev = table(tmpphase_lev,'VariableNames',{'Phase'});
+    tmpphase_lev = cell2table(tmpphase_lev,'VariableNames',{'Phase'});
     phaseTable_lev = [phaseTable_lev;tmpphase_lev];
     
     
     tmptreatment_cue = repmat({treatment},numRows_cue,1);
-    tmptreatment_cue = table(tmptreatment_cue,'VariableNames',{'Treatment'});
+    tmptreatment_cue = cell2table(tmptreatment_cue,'VariableNames',{'Treatment'});
     treatmentTable_cue = [treatmentTable_cue;tmptreatment_cue];
     tmptreatment_lev = repmat({treatment},numRows_lev,1);
-    tmptreatment_lev = table(tmptreatment_lev,'VariableNames',{'Treatment'});
+    tmptreatment_lev = cell2table(tmptreatment_lev,'VariableNames',{'Treatment'});
     treatmentTable_lev = [treatmentTable_lev;tmptreatment_lev];
 
     tempTrialCue = linspace(1,height(cueIdx),height(cueIdx))';
@@ -239,7 +244,8 @@ for i = 1:numFiles
     trialTypeCue = [trialTypeCue;tempTrialTypeCue];
     tempTrialTypeLev = leverArray(:,2);
     trialTypeLev = [trialTypeLev;tempTrialTypeLev];
-
+    
+    disp('Finished!')
 end
 
 trialNumCue = array2table(trialNumCue,'VariableNames',{'Trial Num'});
@@ -267,3 +273,7 @@ tBYt_cue_rev1 = trialByTrial_cue(strcmpi(trialByTrial_cue.Phase,'Rev1'),:);
 
 tBYt_lev_acq2 = trialByTrial_lev(strcmpi(trialByTrial_lev.Phase,'Acq2'),:);
 tBYt_lev_rev1 = trialByTrial_lev(strcmpi(trialByTrial_lev.Phase,'Rev1'),:);
+
+toc
+fprintf('Analyzed %d files successfully!\n',numFiles)
+NERD_STATS(toc,numFiles);
