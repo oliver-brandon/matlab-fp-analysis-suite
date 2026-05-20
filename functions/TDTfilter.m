@@ -255,7 +255,7 @@ if ~isempty(data.streams)
     n = fieldnames(data.streams);
     for i = 1:length(n)
         fs = data.streams.(n{i}).fs;
-        filtered = [];
+        filtered = cell(1,size(time_ranges,2));
         max_ind = max(size(data.streams.(n{i}).data));
         good_index = 1;
         for j = 1:size(time_ranges,2)
@@ -265,6 +265,7 @@ if ~isempty(data.streams)
             if isinf(offset)
                 if onset <= max_ind && onset > 0
                     filtered{good_index} = data.streams.(n{i}).data(:,onset:end);
+                    good_index = good_index + 1;
                     break
                 end
             else
@@ -274,6 +275,7 @@ if ~isempty(data.streams)
                 end
             end
         end
+        filtered = filtered(1:good_index-1);
         if KEEPDATA
             data.streams.(n{i}).filtered = filtered;
         else
@@ -490,14 +492,6 @@ function keep = get_valid_ind(ts, time_ranges)
     for j = 1:numel(ts)
         overlap = find(ts(j) >= time_ranges(1,:) & ts(j) < time_ranges(2,:));
         if any(overlap)
-            keep_ind = keep_ind + 1;
-            keep(keep_ind) = j;
-        end
-    end
-    
-    for j = 1:numel(ts)
-        ts_ind = find(ts(j) >= time_ranges(1,:) & ts(j) < time_ranges(2,:) == 1);
-        if ts_ind
             keep_ind = keep_ind + 1;
             keep(keep_ind) = j;
         end

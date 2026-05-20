@@ -315,10 +315,7 @@ allSignals = cell2mat(data.streams.(STREAM_STORE1).filtered');
 
 % downsample 10x and average 405 signal
 N = 10;
-F405 = zeros(size(allSignals(:,1:N:end-N+1)));
-for ii = 1:size(allSignals,1)
-    F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-end
+F405 = blockMeanDownsample(allSignals, N);
 minLength1 = size(F405,2);
 
 % Create mean signal, standard error of signal, and DC offset of 405 signal
@@ -328,10 +325,7 @@ dcSignal1 = mean(meanSignal1);
 
 % downsample 10x and average 465 signal
 allSignals = cell2mat(data.streams.(STREAM_STORE2).filtered');
-F470 = zeros(size(allSignals(:,1:N:end-N+1)));
-for ii = 1:size(allSignals,1)
-    F470(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-end
+F470 = blockMeanDownsample(allSignals, N);
 minLength2 = size(F470,2);
 
 % Create mean signal, standard error of signal, and DC offset of 465 signal

@@ -11,21 +11,39 @@ function [epocSTREAM] = epocExtract( ...
     )
 
 streams_z = [];
-epoc = TTLarray;
-idx = find(ts1>-0.5,1);
+streams_dFF = [];
+epoc = TTLarray(:);
+streams_raw = NaN(height(epoc), minArrayLen);
+if isempty(epoc)
+    epocSTREAM = streams_z;
+    return
+end
+
+fs = 1 / median(diff(sessionTime));
+sessionStart = sessionTime(1);
+nSamples = numel(sessionTime);
 for ii = 1:height(epoc)
     if epoc(ii) == 0
         streams_raw(ii,1:minArrayLen) = NaN;
-        break
+        continue
     end
     windowStart = epoc(ii)-preEpochWindow;
     windowEnd = windowStart+preEpochWindow+epocWindow;
-    [~,windSt] = min(abs(sessionTime - windowStart));
-    [~,windEn] = min(abs(sessionTime - windowEnd));
+    windSt = timeToIndex(windowStart, sessionStart, fs, nSamples);
+    windEn = timeToIndex(windowEnd, sessionStart, fs, nSamples);
+    if windEn < windSt
+        streams_raw(ii,1:minArrayLen) = NaN;
+        continue
+    end
     epocSigRaw = sessionSignal(1,windSt:windEn);
 
     if length(epocSigRaw) < minArrayLen
-        mn = mean(epocSigRaw(1,end-10:end));
+        if isempty(epocSigRaw)
+            mn = NaN;
+        else
+            tailStart = max(1, length(epocSigRaw) - 10);
+            mn = mean(epocSigRaw(1,tailStart:end), 'omitnan');
+        end
         epocSigRaw(1,end:minArrayLen) = mn;
     elseif length(epocSigRaw) > minArrayLen
         op = length(epocSigRaw);
@@ -38,28 +56,28 @@ end
 [~,baseEn] = min(abs(ts1 - (zBaseWindow(2))));
 
 for j = 1:height(streams_raw)
-    if isnan(streams_raw)
-        streams_raw(1,1:minArrayLen) = NaN;
+    if all(isnan(streams_raw(j,:)))
+        streams_dFF(j,1:minArrayLen) = NaN;
+        streams_z(j,1:minArrayLen) = NaN;
+        continue
     end
     % dF/F
-    meanBase = mean(streams_raw(j,baseSt:baseEn));
-    stdBase = std(streams_raw(j,baseSt:baseEn));
+    meanBase = mean(streams_raw(j,baseSt:baseEn), 'omitnan');
+    if ~isfinite(meanBase) || meanBase == 0
+        streams_dFF(j,1:minArrayLen) = NaN;
+        streams_z(j,1:minArrayLen) = NaN;
+        continue
+    end
     streams_dFF(j,1:minArrayLen) = streams_raw(j,1:minArrayLen) - meanBase;
     streams_dFF(j,1:minArrayLen) = 100*(streams_dFF(j,1:minArrayLen) / meanBase);
     % z-Score
-    meanBase_dFF = mean(streams_dFF(j,baseSt:baseEn));
-    stdBase_dFF = std(streams_dFF(j,baseSt:baseEn));
-    streams_z(j,1:minArrayLen) = (streams_dFF(j,1:minArrayLen) - meanBase_dFF) / stdBase_dFF;
-    % adjusts streams to baseline of zero at -0.5s %
-    if streams_z(j,idx) < 0
-        val = streams_z(j,idx);
-        diff = 0 - val;
-        streams_z(j,1:minArrayLen) = streams_z(j,1:minArrayLen) + abs(diff);
-    elseif streams_z(j,idx) > 0
-        val = streams_z(j,idx);
-        diff = 0 - val;
-        streams_z(j,1:minArrayLen) = streams_z(j,1:minArrayLen) - abs(diff);
+    meanBase_dFF = mean(streams_dFF(j,baseSt:baseEn), 'omitnan');
+    stdBase_dFF = std(streams_dFF(j,baseSt:baseEn), 0, 'omitnan');
+    if ~isfinite(meanBase_dFF) || ~isfinite(stdBase_dFF) || stdBase_dFF == 0
+        streams_z(j,1:minArrayLen) = NaN;
+        continue
     end
+    streams_z(j,1:minArrayLen) = (streams_dFF(j,1:minArrayLen) - meanBase_dFF) / stdBase_dFF;
 
 end
 epocSTREAM = streams_z;

@@ -5,11 +5,16 @@ function appendStructField(filename, prl_phase, treatment, fieldData)
 %   .mat file specified by FILENAME in the current working directory.
 
 % Load the existing structure from the .mat file
-load(filename);
+S = load(filename, 'prl_ERT');
+if ~isfield(S, 'prl_ERT')
+    error('appendStructField:MissingStruct', ...
+        '%s does not contain a prl_ERT variable.', filename);
+end
+prl_ERT = S.prl_ERT;
 
 % Append the new field to the structure
 prl_ERT.(prl_phase).(treatment) = fieldData;
 
 % Save the updated structure back to the .mat file
-save(filename, '-struct', 'prl_ERT');
+save(filename, 'prl_ERT', '-append');
 end

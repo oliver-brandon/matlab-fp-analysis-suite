@@ -88,7 +88,8 @@ for i = 1:numFiles
         [~,cEn] = min(abs(session_time - cueEnd));
         cueSigRaw = SIGNAL_raw(1,cSt:cEn);
         if length(cueSigRaw) < epocArrayLen
-            mn = mean(cueSigRaw(1,end-10:end));
+            tailStart = max(1, length(cueSigRaw) - 10);
+            mn = mean(cueSigRaw(1,tailStart:end), 'omitnan');
             cueSigRaw(1,end:epocArrayLen) = mn;
         elseif length(cueSigRaw) > epocArrayLen
             op = length(cueSigRaw);

@@ -138,7 +138,8 @@ for i = 1:numFiles
         epocSigRaw_lev = SIGNAL_raw(1,windSt:windEn);
 
         if length(epocSigRaw_lev) < epocArrayLen
-            mn = mean(epocSigRaw_lev(1,end-10:end));
+            tailStart = max(1, length(epocSigRaw_lev) - 10);
+            mn = mean(epocSigRaw_lev(1,tailStart:end), 'omitnan');
             epocSigRaw_lev(1,end:epocArrayLen) = mn;
         elseif length(epocSigRaw_lev) > epocArrayLen
             op = length(epocSigRaw_lev);
@@ -193,7 +194,8 @@ for i = 1:numFiles
         epocSigRaw_cue = SIGNAL_raw(1,windSt:windEn);
     
         if length(epocSigRaw_cue) < epocArrayLen
-            mn = mean(epocSigRaw_cue(1,end-10:end));
+            tailStart = max(1, length(epocSigRaw_cue) - 10);
+            mn = mean(epocSigRaw_cue(1,tailStart:end), 'omitnan');
             epocSigRaw_cue(1,end:epocArrayLen) = mn;
         elseif length(epocSigRaw_cue) > epocArrayLen
             op = length(epocSigRaw_cue);

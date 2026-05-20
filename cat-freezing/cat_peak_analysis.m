@@ -74,7 +74,7 @@ if useSmallMADWindow == 0
 elseif useSmallMADWindow == 1
     indSt = find(time>MADwindow(:,1),1);
     indEn = find(time>MADwindow(:,2),1);
-    MAD1 = mad(dFF_signal_smooth, 1);
+    MAD1 = mad(dFF_signal_smooth(indSt:indEn), 1);
 else
     error('Unknown MAD window')
 end
@@ -114,7 +114,8 @@ for k = 1:height(epoc_ts)
     sig_epoc = dFF_signal_smooth(1,indSt:indEn);
     
     if length(sig_epoc) < epocArrayLen
-        mn = mean(sig_epoc(1,end-10:end));
+        tailStart = max(1, length(sig_epoc) - 10);
+        mn = mean(sig_epoc(1,tailStart:end), 'omitnan');
         sig_epoc(1,end:epocArrayLen) = mn;
     elseif length(sig_epoc) > epocArrayLen
         op = length(sig_epoc);
@@ -122,15 +123,7 @@ for k = 1:height(epoc_ts)
         sig_epoc = sig_epoc(1,1:end-arrayDif);
     end
     sig_epoc_all(k,:) = sig_epoc;
-    if sig_epoc_all(k,1) < 0
-        val = sig_epoc_all(k,1);
-        diff = 0-val;
-        sig_epoc_all(k,1:epocArrayLen) = sig_epoc_all(k,1:epocArrayLen) + abs(diff);
-    elseif sig_epoc_all(k,1) > 0
-        val = sig_epoc_all(k,1);
-        diff = 0 - val;
-        sig_epoc_all(k,1:epocArrayLen) = sig_epoc_all(k, 1:epocArrayLen) - abs(diff);
-    end
+    % Metrics use unshifted traces. Baseline shifts are plot-only.
 
 end
 mean_sig_all = mean(sig_epoc_all,1)';

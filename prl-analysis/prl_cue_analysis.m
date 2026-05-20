@@ -31,21 +31,21 @@ myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name},'.mat'));
 numFiles = length(myFiles);
-IDs = {};
-treatList = {};
-prl_phase = {};
+IDs = cell(numFiles,1);
+treatList = cell(numFiles,1);
+prl_phase = cell(numFiles,1);
 omitted = struct('file', {}, 'timestamp', {}, 'trial', {}, 'signal', {});
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
     fprintf('Analyzing %s (%d of %d)\n', name, i, numFiles)
     brokenID = strsplit(name,'_');
-    tempID = cellstr(brokenID(1));
-    tempPhase = cellstr(brokenID(2));
-    tempTreat = cellstr(brokenID(2));
-    IDs = vertcat(IDs,tempID);
-    treatList = vertcat(treatList,tempTreat);
-    prl_phase = vertcat(prl_phase,tempPhase);
+    if numel(brokenID) < 3
+        error('Filename %s must contain ID_Phase_Treatment tokens.', name);
+    end
+    IDs{i} = strtrim(brokenID{1});
+    prl_phase{i} = strtrim(brokenID{2});
+    treatList{i} = strtrim(brokenID{3});
     load(filename)
     if dualFiber == 1
         ISOS = 'x405A';
@@ -173,11 +173,13 @@ for i = 1:numFiles
             continue
         end
         cueTTEnd = cueTTStart + timeWindow + baseWindow;
-        [~,cTTSt] = min(abs(session_time - cueTTStart));
-        [~,cTTEn] = min(abs(session_time - cueTTEnd));
+        fsDown = data.streams.(SIGNAL).fs/N;
+        cTTSt = timeToIndex(cueTTStart, session_time(1), fsDown, numel(session_time));
+        cTTEn = timeToIndex(cueTTEnd, session_time(1), fsDown, numel(session_time));
         cueTTSigRaw = SIGNAL_raw(1,cTTSt:cTTEn);
         if length(cueTTSigRaw) < epocArrayLen
-            mn = mean(cueTTSigRaw(1,end-10:end));
+            tailStart = max(1, length(cueTTSigRaw) - 10);
+            mn = mean(cueTTSigRaw(1,tailStart:end), 'omitnan');
             cueTTSigRaw(1,end:epocArrayLen) = mn;
         elseif length(cueTTSigRaw) > epocArrayLen
             op = length(cueTTSigRaw);
@@ -667,6 +669,10 @@ barData = [bar1,bar2];
 bar(barData);
 xticks(1:2);
 xticklabels({'Correct','Incorrect'});
+
+defaults = analysisDefaults();
+prl_cue.metadata.pipelineVersion = defaults.pipelineVersion;
+prl_cue.metadata.baseAdjust = baseAdjust;
 
 toc
 

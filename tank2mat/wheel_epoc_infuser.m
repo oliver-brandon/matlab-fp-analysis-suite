@@ -33,7 +33,7 @@ for i = 1:numFiles
     
     %combine index with timestamp data from Cam1 notes%
     
-    if ~isfield(data.epocs.Cam1,'notes')
+    if ~isfield(data, 'epocs') || ~isfield(data.epocs, 'Cam1') || ~isfield(data.epocs.Cam1,'notes')
         missing_notes = [missing_notes; {name}];
         fprintf('%s missing notes...skipping (%d of %d)\n',name,i,numFiles)
         continue
@@ -81,7 +81,7 @@ for i = 1:numFiles
     data.epocs.runStop.name = 'runStop';
     data.epocs.runStop.data = runStopInd;
 
-    save(FILEPATH,"data")
+    save(fullfile(savDir,myFiles(i).name),"data")
 end
 toc
 disp("Successfully infused epocs into mat files")

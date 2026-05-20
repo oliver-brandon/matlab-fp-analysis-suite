@@ -1,72 +1,52 @@
 function [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(...
     CUETTL,TTL1,TTL2,TTL3,TTL4)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % This function is designed to extract and sort all TTL events in order
-    % of occurance during a session. Currently set up to extract and sort
-    % the following TTLs: 
+    % Extracts cue/lever TTL events into paired cue -> lever rows.
     %
-    % Cue (1)
-    % Correct Rewarded Lever Press (2)
-    % Correct Unrewarded Lever Press (3)
-    % Incorrect Rewarded Lever Press (4)
-    % Incorrect Unrewarded Lever Press (5)
-    % 
-    % The TTL variable being passed must be a column vector with timestamps
-    % corresponding to the TTL event.
+    % Output session_identifiers is an Nx2 array:
+    %   column 1 = timestamp
+    %   column 2 = event type (0 cue, 1 cRew, 2 cNoRew, 3 iRew, 4 iNoRew)
+    %
+    % Only levers whose immediately preceding event is a cue are retained.
+    % This avoids positional deletion rules that can silently shift pairings.
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    X0 = zeros(height(CUETTL),1);
-    X1 = ones(height(TTL1),1);
-    X2 = ones(height(TTL2),1)*2;
-    X3 = ones(height(TTL3),1)*3;
-    X4 = ones(height(TTL4),1)*4;
-    % Append first column of each array to new array
-    combined_array1 = [CUETTL(:,1); TTL1(:,1); TTL2(:,1); TTL3(:,1); TTL4(:,1)];
-    combined_array2 = [X0(:,1); X1(:,1); X2(:,1); X3(:,1); X4(:,1)];
-    
-    session_identifiers = [combined_array1 combined_array2];
-    % Sort the first column of newArray in ascending order
-    session_identifiers = sortrows(session_identifiers, 1);
-    % Find the rows in A where the first column is not zero
-    idx = session_identifiers(:,1) ~= 0;
-    % Use logical indexing to remove rows with zero values
-    session_identifiers = session_identifiers(idx,:);
-    if session_identifiers(1,2) ~= 0
-        session_identifiers = session_identifiers(2:end,:);
-        % disp('missing first cue and third lever')
-    elseif session_identifiers(3,2) ~= 0
-         % removes lever ts preceding missing second cue ts
-         session_identifiers = [session_identifiers(1:2,:);session_identifiers(4:end,:)];
-         % disp('missing second cue')
-    elseif session_identifiers(1,2) == 0 && session_identifiers(2,2) == 0
-        session_identifiers = session_identifiers(2:end,:);
-        % disp('missing second lever press')
-    elseif session_identifiers(2,2) == 0 && session_identifiers(end,2) == 0
-        session_identifiers = session_identifiers(3:end-1,:);
-        % disp('missing last lever press')
 
+    cueTs = normalizeTimestamps(CUETTL);
+    ttl1Ts = normalizeTimestamps(TTL1);
+    ttl2Ts = normalizeTimestamps(TTL2);
+    ttl3Ts = normalizeTimestamps(TTL3);
+    ttl4Ts = normalizeTimestamps(TTL4);
+    leverTs = [
+        ttl1Ts, ones(numel(ttl1Ts),1);
+        ttl2Ts, ones(numel(ttl2Ts),1)*2;
+        ttl3Ts, ones(numel(ttl3Ts),1)*3;
+        ttl4Ts, ones(numel(ttl4Ts),1)*4
+    ];
+
+    cueEvents = [cueTs, zeros(numel(cueTs),1)];
+    allEvents = sortrows([cueEvents; leverTs], 1);
+
+    session_identifiers = [];
+    for i = 2:size(allEvents,1)
+        isLever = allEvents(i,2) > 0;
+        previousIsCue = allEvents(i-1,2) == 0;
+        if isLever && previousIsCue
+            session_identifiers = [session_identifiers; allEvents(i-1,:); allEvents(i,:)]; %#ok<AGROW>
+        end
     end
 
+    if isempty(session_identifiers)
+        lever_session_ts = [];
+        trial_number = [];
+        trial_name = {};
+        return
+    end
 
-    
     lever_session_ts = session_identifiers(:,1);
     trial_number = session_identifiers(:,2);
-    
-    cue_lever_ts(:,1) = CUETTL;
-   
-    % lever_session_ts(2,:) = [];
-    
-    if size(cue_lever_ts,1) > size(lever_session_ts,1)
-        cue_lever_ts = cue_lever_ts(1:size(lever_session_ts,1), :);
-    else
-        cue_lever_ts(end+1:size(lever_session_ts,1), :) = 0;
-    end
 
-    cue_lever_ts(:,2) = lever_session_ts;
-    % lever_latency = cue_lever_ts(:,1) - cue_lever_ts(:,2);
-    % Initialize the new cell array with the same size as the original column
-    trial_name = cell(size(trial_number));
     trial_outcome = trial_number(2:2:end,1);
-    % Loop through the original column and replace each number with the corresponding string
+    trial_name = cell(size(trial_outcome));
     for i = 1:length(trial_outcome)
         switch trial_outcome(i)
             case 1
@@ -80,4 +60,13 @@ function [session_identifiers,lever_session_ts,trial_number,trial_name] = sessio
         end
     end
 
+end
+
+function ts = normalizeTimestamps(ts)
+if isempty(ts) || isequal(ts, 0)
+    ts = [];
+else
+    ts = ts(:);
+    ts = ts(~isnan(ts) & ts ~= 0);
+end
 end

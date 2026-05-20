@@ -115,10 +115,7 @@ if batch_analyze == 1
         allSignals_DLS = data.streams.(DLS_ISOS).filtered';
         % downsample 10x and average 405 signal
         N = 10;
-        F405_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_DLS,1)
-            F405_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
-        end
+        F405_DLS = blockMeanDownsample(allSignals_DLS, N);
         minLength1_DLS = size(F405_DLS,2);
         % Create mean signal, standard error of signal, and DC offset of 405 signal
         meanSignal1_DLS = mean(F405_DLS);
@@ -127,10 +124,7 @@ if batch_analyze == 1
         
         % downsample 10x and average 465 signal
         allSignals_DLS = data.streams.(DLS_GRABDA).filtered';
-        F465_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_DLS,1)
-            F465_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
-        end
+        F465_DLS = blockMeanDownsample(allSignals_DLS, N);
         minLength2_DLS = size(F465_DLS,2);
         
         % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -169,10 +163,7 @@ if batch_analyze == 1
         allSignals_NAc = data.streams.(NAc_ISOS).filtered';
         % downsample 10x and average 405 signal
         N = 10;
-        F405_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_NAc,1)
-            F405_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);
-        end
+        F405_NAc = blockMeanDownsample(allSignals_NAc, N);
         minLength1_NAc = size(F405_NAc,2);
         % Create mean signal, standard error of signal, and DC offset of 405 signal
         meanSignal1_NAc = mean(F405_NAc);
@@ -181,10 +172,7 @@ if batch_analyze == 1
         
         % downsample 10x and average 465 signal
         allSignals_NAc = data.streams.(NAc_GRABDA).filtered';
-        F465_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_NAc,1)
-            F465_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);
-        end
+        F465_NAc = blockMeanDownsample(allSignals_NAc, N);
         minLength2_NAc = size(F465_NAc,2);
         
         % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -282,10 +270,7 @@ elseif batch_analyze == 2
         allSignals_DLS = data.streams.(DLS_ISOS).data';
         % downsample 10x and average 405 signal
         N = 10;
-        F405_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_DLS,1)
-            F405_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
-        end
+        F405_DLS = blockMeanDownsample(allSignals_DLS, N);
         minLength1_DLS = size(F405_DLS,2);
         % Create mean signal, standard error of signal, and DC offset of 405 signal
         meanSignal1_DLS = mean(F405_DLS);
@@ -294,10 +279,7 @@ elseif batch_analyze == 2
         
         % downsample 10x and average 465 signal
         allSignals_DLS = data.streams.(DLS_GRABDA).data';
-        F465_DLS = zeros(size(allSignals_DLS(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_DLS,1)
-            F465_DLS(ii,:) = arrayfun(@(i) mean(allSignals_DLS(ii,i:i+N-1)),1:N:length(allSignals_DLS)-N+1);
-        end
+        F465_DLS = blockMeanDownsample(allSignals_DLS, N);
         minLength2_DLS = size(F465_DLS,2);
         
         % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -337,10 +319,7 @@ elseif batch_analyze == 2
         allSignals_NAc = data.streams.(NAc_ISOS).data';
         % downsample 10x and average 405 signal
         N = 10;
-        F405_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_NAc,1)
-            F405_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);
-        end
+        F405_NAc = blockMeanDownsample(allSignals_NAc, N);
         minLength1_NAc = size(F405_NAc,2);
         % Create mean signal, standard error of signal, and DC offset of 405 signal
         meanSignal1_NAc = mean(F405_NAc);
@@ -349,10 +328,7 @@ elseif batch_analyze == 2
         
         % downsample 10x and average 465 signal
         allSignals_NAc = data.streams.(NAc_GRABDA).data';
-        F465_NAc = zeros(size(allSignals_NAc(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals_NAc,1)
-            F465_NAc(ii,:) = arrayfun(@(i) mean(allSignals_NAc(ii,i:i+N-1)),1:N:length(allSignals_NAc)-N+1);
-        end
+        F465_NAc = blockMeanDownsample(allSignals_NAc, N);
         minLength2_NAc = size(F465_NAc,2);
         
         % Create mean signal, standard error of signal, and DC offset of 465 signal

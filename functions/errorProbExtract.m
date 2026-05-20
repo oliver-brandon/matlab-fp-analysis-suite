@@ -164,7 +164,7 @@ elseif errorType == 4
     data.epocs.LOS_shift_LEV.data = ones(height(errorProbLeverTS(:,1))) * 17;
     data.epocs.los_SHIFT_LEV.name = 'los_SHIFT_LEV';
     data.epocs.los_SHIFT_LEV.onset = errorProbLeverTS(:,2);
-    data.epocs.los_SHIFT_LEV.onset = errorProbLeverTS(:,2) + 1;
+    data.epocs.los_SHIFT_LEV.offset = errorProbLeverTS(:,2) + 1;
     data.epocs.los_SHIFT_LEV.data = ones(height(errorProbLeverTS(:,2))) * 18;
     % cue TTLs
     data.epocs.LOS_shift_CUE.name = 'LOS_shift_CUE';

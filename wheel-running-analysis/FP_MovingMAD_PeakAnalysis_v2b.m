@@ -131,7 +131,7 @@ signalC_pks(1,size(signal_chunksC,2)) = nan;
 for jj = 2:height(signal_chunksC)
     signalC_median = median(signal_chunksC(jj-1,:));
     signalC_MAD = mad(signal_chunksC(jj-1,:),1);
-    signalC_thresh = (signalA_median + (3 * signalC_MAD));
+    signalC_thresh = (signalC_median + (3 * signalC_MAD));
     pks2 = signal_chunksC(jj,:) > signalC_thresh;
 
     signalC_pks(jj,:) = pks2;

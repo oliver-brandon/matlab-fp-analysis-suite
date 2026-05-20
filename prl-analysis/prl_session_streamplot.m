@@ -110,7 +110,8 @@ if isfield(data.epocs, 'cRewA')
         SIGNAL_time = time(1,ind1:ind2);
         SIGNAL_z = (SIGNAL_window - SIGNAL_meanBase)/SIGNAL_std;
         if length(SIGNAL_z) < epocArrayLen
-            mn = mean(SIGNAL_z(1,end-10:end));
+            tailStart = max(1, length(SIGNAL_z) - 10);
+            mn = mean(SIGNAL_z(1,tailStart:end), 'omitnan');
             SIGNAL_z(1,end:epocArrayLen) = mn;
         elseif length(SIGNAL_z) > epocArrayLen
             op = length(SIGNAL_z);

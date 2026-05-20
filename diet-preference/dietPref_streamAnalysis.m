@@ -99,8 +99,8 @@ for i = 1:numFiles
             SIGNAL_z = SIGNAL_raw(1,ind1:ind2);
             epoc_time = session_time(1,ind1:ind2);
             zb = mean(SIGNAL_zBase);
-            zsd = std(SIGNAL_dffBase);
-            zfinal = (SIGNAL_z - SIGNAL_dffBase)/zsd;
+            zsd = std(SIGNAL_zBase);
+            zfinal = (SIGNAL_z - zb)/zsd;
             if length(zfinal) < minArrayLen || length(SIGNAL_dff) < minArrayLen
                 continue
             end
@@ -131,8 +131,8 @@ for i = 1:numFiles
             SIGNAL_z = SIGNAL_raw(1,ind1:ind2);
             epoc_time = session_time(1,ind1:ind2);
             zb = mean(SIGNAL_zBase);
-            zsd = std(SIGNAL_dffBase);
-            zfinal = (SIGNAL_z - SIGNAL_dffBase)/zsd;
+            zsd = std(SIGNAL_zBase);
+            zfinal = (SIGNAL_z - zb)/zsd;
             if length(zfinal) < minArrayLen || length(SIGNAL_dff) < minArrayLen
                 continue
             end

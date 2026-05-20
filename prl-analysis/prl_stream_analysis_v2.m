@@ -49,64 +49,46 @@ master_cNoRew_STREAMz = zeros(numFiles,epocArrayLen);
 master_iRew_STREAMz = zeros(numFiles,epocArrayLen);
 master_iNoRew_STREAMz = zeros(numFiles,epocArrayLen);
 
-IDs = cell(size(numFiles,1));
-phaseList = cell(size(numFiles,1));
-treatList = cell(size(numFiles,1));
+IDs = cell(numFiles,1);
+phaseList = cell(numFiles,1);
+treatList = cell(numFiles,1);
 for i = 1:numFiles
     filename = fullfile(myDir,myFiles(i).name);
     [~,name,~] = fileparts(filename);
     fprintf('Analyzing %s (%d of %d)\n', name, i, numFiles)
     brokenID = strsplit(name,'_');
+    if numel(brokenID) < 3
+        error('Filename %s must contain ID_Phase_Treatment tokens.', name);
+    end
     IDs{i} = cellstr(strtrim(brokenID{1}));
     phaseList{i} = cellstr(strtrim(brokenID{2}));
     treatList{i} = cellstr(strtrim(brokenID{3}));
 
     load(filename)
     if dualFiber == 1
-        if isfield(data.epocs,'iNoRewA')
-            if dFchannel == 1
-                ISOS = 'x405A';
-                SIGNAL = 'x465A';
-            elseif dFchannel == 2
-                ISOS = 'x405C';
-                SIGNAL = 'x465C';
-            else
-                error('"dFchannel" value invalid')
-                
-            end
-            cue = data.epocs.St1_.onset;
-            cRew = data.epocs.cRewA.onset;
-            cNoRew = data.epocs.cNoRewA.onset;
-            iRew = data.epocs.iRewA.onset;
-            iNoRew = data.epocs.iNoRewA.onset;
-        elseif isfield(data.epocs,'iNoRewC')
-            if dFchannel == 1
-                ISOS = 'x405A';
-                SIGNAL = 'x465A';
-            elseif dFchannel == 2
-                ISOS = 'x405C';
-                SIGNAL = 'x465C';
-            else
-                error('"dFchannel" value invalid')
-            end
-            cue = data.epocs.St2_.onset;
-            cRew = data.epocs.cRewC.onset;
-            cNoRew = data.epocs.cNoRewC.onset;
-            iRew = data.epocs.iRewC.onset;
-            iNoRew = data.epocs.iNoRewC.onset;
-        else
-            disp('No streams available.')
-            break
+        cfg = photometryChannelConfig(dFchannel);
+        ISOS = cfg.isos;
+        SIGNAL = cfg.signal;
+        [ok, problems] = validatePhotometryData(data, {ISOS, SIGNAL}, ...
+            {cfg.cue, cfg.cRew, cfg.cNoRew, cfg.iRew, cfg.iNoRew}, t + timeWindow + baseWindow);
+        if ~ok
+            warning('Skipping %s: %s', name, strjoin(problems, '; '));
+            continue
         end
-        if ~isfield(data.epocs,'CL1_')
+        cue = data.epocs.(cfg.cue).onset;
+        cRew = data.epocs.(cfg.cRew).onset;
+        cNoRew = data.epocs.(cfg.cNoRew).onset;
+        iRew = data.epocs.(cfg.iRew).onset;
+        iNoRew = data.epocs.(cfg.iNoRew).onset;
+        if ~isfield(data.epocs,cfg.correct)
             Correct = 0;
         else
-            Correct = data.epocs.CL1_.onset;
+            Correct = data.epocs.(cfg.correct).onset;
         end
-        if ~isfield(data.epocs,'IL1_')
+        if ~isfield(data.epocs,cfg.incorrect)
             Incorrect = 0;
         else
-            Incorrect = data.epocs.IL1_.onset;
+            Incorrect = data.epocs.(cfg.incorrect).onset;
         end
 
         [session_identifiers,lever_session_ts,trial_number,trial_name] = sessionArraySort(cue,cRew,...
@@ -396,7 +378,6 @@ for i = 1:numFiles
  
     
     %% Streams baselined to cue preceding it %%
-    idx = find(ts1>baseAdjust,1);
     cueArray = session_identifiers(1:2:end,:);
     if session_identifiers(end,2) == 0
         session_identifiers = session_identifiers(1:end-1,:);
@@ -409,18 +390,20 @@ for i = 1:numFiles
         
         cueBase1 = cueArray(m,1) - 3;
         cueBase2 = cueArray(m,1) - 1;
-        [~,cueSt] = min(abs(session_time - cueBase1));
-        [~,cueEn] = min(abs(session_time - cueBase2));
+        fsDown = data.streams.(SIGNAL).fs/N;
+        cueSt = timeToIndex(cueBase1, session_time(1), fsDown, numel(session_time));
+        cueEn = timeToIndex(cueBase2, session_time(1), fsDown, numel(session_time));
         cueBaseMean(m,1) = mean(SIGNAL_raw(1,cueSt:cueEn));
         cueBaseStd(m,1) = std(SIGNAL_raw(1,cueSt:cueEn));
 
         leverStart = leverArray(m,1) - baseWindow;
         leverEnd = leverStart + timeWindow + baseWindow;
-        [~,levSt] = min(abs(session_time - leverStart));
-        [~,levEn] = min(abs(session_time - leverEnd));
+        levSt = timeToIndex(leverStart, session_time(1), fsDown, numel(session_time));
+        levEn = timeToIndex(leverEnd, session_time(1), fsDown, numel(session_time));
         leverSigRaw = SIGNAL_raw(1,levSt:levEn);
         if length(leverSigRaw) < epocArrayLen
-            mn = mean(leverSigRaw(1,end-10:end));
+            tailStart = max(1, length(leverSigRaw) - 10);
+            mn = mean(leverSigRaw(1,tailStart:end), 'omitnan');
             leverSigRaw(1,end:epocArrayLen) = mn;
         elseif length(leverSigRaw) > epocArrayLen
             op = length(leverSigRaw);
@@ -449,16 +432,7 @@ for i = 1:numFiles
         levers_z(n,1:epocArrayLen) = smoothdata(levers_z(n,1:epocArrayLen),'movmean',smoothFactor);
         
 
-        % adjusts streams to baseline of zero at -0.5s %
-        if levers_z(n,idx) < 0
-            val = levers_z(n,idx);
-            diff = 0 - val;
-            levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) + abs(diff);
-        elseif levers_z(n,idx) > 0
-            val = levers_z(n,idx);
-            diff = 0 - val;
-            levers_z(n,1:epocArrayLen) = levers_z(n,1:epocArrayLen) - abs(diff);
-        end
+        % Metrics use unshifted z-scored traces. Baseline shifts are plot-only.
         % amp_cueBase(n,1) = max(levers_z(n,ampSt:ampEn));
         % % Calculate AUC above x=0 %
         % positive_indices = levers_z(n,:) > 0;
@@ -477,18 +451,11 @@ for i = 1:numFiles
     end
     session_lever_streams{i,1} = levers_z;
     sessionSTREAMSz{i,1} = mean(levers_z);
-    trialNames = array2table(session_identifiers(2:2:end,2),'VariableNames',{'Trial_Type'});
-    levers_z = array2table(levers_z);
-    levers_z = horzcat(trialNames,levers_z);
-    cRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 1, 2:end));
-    cNoRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 2, 2:end));
-    iRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 3, 2:end));
-    iNoRew_cueBase = table2array(levers_z(levers_z.Trial_Type == 4, 2:end));
-
-    amp_cueBase = array2table(amp_cueBase);
-    amp_cueBase = horzcat(trialNames,amp_cueBase);
-    auc_cueBase = array2table(auc_cueBase);
-    auc_cueBase = horzcat(trialNames,auc_cueBase);
+    trialTypes = session_identifiers(2:2:end,2);
+    cRew_cueBase = levers_z(trialTypes == 1, :);
+    cNoRew_cueBase = levers_z(trialTypes == 2, :);
+    iRew_cueBase = levers_z(trialTypes == 3, :);
+    iNoRew_cueBase = levers_z(trialTypes == 4, :);
         
     if isempty(cRew_cueBase)
         amp_cRew_cueBase(i,:) = nan;
@@ -503,8 +470,8 @@ for i = 1:numFiles
     end
 
     if isempty(cNoRew_cueBase)
-        amp_cNoRew_cueBase = nan;
-        auc_cNoRew_cueBase = nan;
+        amp_cNoRew_cueBase(i,:) = nan;
+        auc_cNoRew_cueBase(i,:) = nan;
         
     else
         % amp_cNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
@@ -515,8 +482,8 @@ for i = 1:numFiles
     end
 
     if isempty(iRew_cueBase)
-        amp_iRew_cueBase = nan;
-        auc_iRew_cueBase = nan;
+        amp_iRew_cueBase(i,:) = nan;
+        auc_iRew_cueBase(i,:) = nan;
         
     else
         % amp_iRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
@@ -527,8 +494,8 @@ for i = 1:numFiles
     end
 
     if isempty(iNoRew_cueBase)
-        amp_iNoRew_cueBase = nan;
-        auc_iNoRew_cueBase = nan;
+        amp_iNoRew_cueBase(i,:) = nan;
+        auc_iNoRew_cueBase(i,:) = nan;
         
     else
         % amp_iNoRew_cueBase = table2array(amp_cueBase(amp_cueBase.Trial_Type == 1,2));
@@ -561,12 +528,14 @@ for i = 1:numFiles
 
             windowStart = epoc(ii)-baseWindow;
             windowEnd = windowStart+timeWindow+baseWindow;
-            [~,windSt] = min(abs(session_time - windowStart));
-            [~,windEn] = min(abs(session_time - windowEnd));
+            fsDown = data.streams.(SIGNAL).fs/N;
+            windSt = timeToIndex(windowStart, session_time(1), fsDown, numel(session_time));
+            windEn = timeToIndex(windowEnd, session_time(1), fsDown, numel(session_time));
             epocSigRaw = SIGNAL_raw(1,windSt:windEn);
 
             if length(epocSigRaw) < epocArrayLen
-                mn = mean(epocSigRaw(1,end-10:end));
+                tailStart = max(1, length(epocSigRaw) - 10);
+                mn = mean(epocSigRaw(1,tailStart:end), 'omitnan');
                 epocSigRaw(1,end:epocArrayLen) = mn;
             elseif length(epocSigRaw) > epocArrayLen
                 op = length(epocSigRaw);
@@ -593,16 +562,7 @@ for i = 1:numFiles
             
             streams_z(j,1:epocArrayLen) = smoothdata(streams_z(j,1:epocArrayLen),'movmean',smoothFactor);
             
-            % adjusts streams to baseline of zero at -0.5s %
-            if streams_z(j,idx) < 0
-                val = streams_z(j,idx);
-                diff = 0 - val;
-                streams_z(j,1:epocArrayLen) = streams_z(j,1:epocArrayLen) + abs(diff);
-            elseif streams_z(j,idx) > 0
-                val = streams_z(j,idx);
-                diff = 0 - val;
-                streams_z(j,1:epocArrayLen) = streams_z(j,1:epocArrayLen) - abs(diff);
-            end
+            % Metrics use unshifted z-scored traces. Baseline shifts are plot-only.
 
             % amplitude
             ampdFF(j) = max(streams_dFF(j,ampSt:ampEn));
@@ -621,15 +581,14 @@ for i = 1:numFiles
             % aucdFF(j) = trapz(x_pos,y_pos);
             % aucdFF(j) = trapz(streams_dFF(j,aucSt:aucEn),ts1(1,aucSt:aucEn));
             
-        
-            outputSTREAMSraw{k,1} = streams_raw(:,1:epocArrayLen);
-            outputSTREAMSdFF{k,1} = streams_dFF(:,1:epocArrayLen);
-            outputSTREAMSz{k,1} = streams_z(:,1:epocArrayLen);
-            outputAMPdFF{k,1} = ampdFF;
-            outputAMPz{k,1} = ampZ;
-            outputAUCdFF{k,1} = aucdFF;
-            outputAUCz{k,1} = aucZ;
         end
+        outputSTREAMSraw{k,1} = streams_raw(:,1:epocArrayLen);
+        outputSTREAMSdFF{k,1} = streams_dFF(:,1:epocArrayLen);
+        outputSTREAMSz{k,1} = streams_z(:,1:epocArrayLen);
+        outputAMPdFF{k,1} = ampdFF;
+        outputAMPz{k,1} = ampZ;
+        outputAUCdFF{k,1} = aucdFF;
+        outputAUCz{k,1} = aucZ;
         cue_cueBase = outputSTREAMSz{1,1};
         amp_cue_cueBase(i,1) = calculateAMP(mean(cue_cueBase(:,ampSt:ampEn),1,'omitnan'));
         auc_cue_cueBase(i,1) = calculateAUC(mean(cue_cueBase(:,aucSt:aucEn),1,'omitnan'),ts1(:,aucSt:aucEn));
@@ -991,6 +950,8 @@ prl_stream_analysis.metadata.trimStart = t;
 prl_stream_analysis.metadata.downsample = N;
 prl_stream_analysis.metadata.Hz = sigHz;
 prl_stream_analysis.metadata.baseAdjust = baseAdjust;
+defaults = analysisDefaults();
+prl_stream_analysis.metadata.pipelineVersion = defaults.pipelineVersion;
 
 
 toc

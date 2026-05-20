@@ -52,6 +52,7 @@ if ttlType == 0
         [~,name,~] = fileparts(FILEPATH);
         emptyID = 'Empty';
         brokenID = strsplit(name,'_');
+        requireTokens(brokenID, 6, name, 'PRL');
         animalIDA = char(brokenID{1});
         animalIDC = char(brokenID{4});
         emptylogicA = strcmp(animalIDA,emptyID);
@@ -66,10 +67,10 @@ if ttlType == 0
                         continue
                     elseif emptylogicA == 0
                         if isfield(data.epocs,'IL2_') == 1
-                            data.epocs = rmfield(data.epocs, {'Pe2_','St2_','IL2_'});
+                            data.epocs = safeRmField(data.epocs, {'Pe2_','St2_','IL2_'});
                         end
                         if isfield(data.epocs,'CL2_') == 1
-                            data.epocs = rmfield(data.epocs, {'CL2_'});
+                            data.epocs = safeRmField(data.epocs, {'CL2_'});
                         end
                         taskA = char(brokenID{2});
                         treatmentA = char(brokenID{3});
@@ -92,10 +93,10 @@ if ttlType == 0
                         continue
                     elseif emptylogicC == 0
                         if isfield(data.epocs,'IL1_') == 1
-                            data.epocs = rmfield(data.epocs, {'Pe1_','St1_','IL1_'});
+                            data.epocs = safeRmField(data.epocs, {'Pe1_','St1_','IL1_'});
                         end
                         if isfield(data.epocs,'CL1_') == 1
-                            data.epocs = rmfield(data.epocs, {'CL1_'});
+                            data.epocs = safeRmField(data.epocs, {'CL1_'});
                         end
                         taskC = char(brokenID{5});
                         treatmentC = char(brokenID{6});
@@ -122,13 +123,13 @@ if ttlType == 0
                         continue
                     elseif emptylogicA == 0
                         if isfield(data.streams, 'x405C')
-                            data.streams = rmfield(data.streams, {'x405C','x465C'});
+                            data.streams = safeRmField(data.streams, {'x405C','x465C'});
                         end
                         if isfield(data.epocs,'IL2_') == 1
-                            data.epocs = rmfield(data.epocs, {'Pe2_','St2_','IL2_'});
+                            data.epocs = safeRmField(data.epocs, {'Pe2_','St2_','IL2_'});
                         end
                         if isfield(data.epocs,'CL2_') == 1
-                            data.epocs = rmfield(data.epocs, {'CL2_'});
+                            data.epocs = safeRmField(data.epocs, {'CL2_'});
                         end
                        
                         taskA = char(brokenID{2});
@@ -153,16 +154,16 @@ if ttlType == 0
                         continue
                     elseif emptylogicC == 0
                         if isfield(data.streams, 'x405A')
-                            data.streams = rmfield(data.streams, {'x405A','x465A'});
+                            data.streams = safeRmField(data.streams, {'x405A','x465A'});
                         end
                         if isfield(data.epocs,'IL1_') == 1
-                            data.epocs = rmfield(data.epocs, {'Pe1_','St1_','IL1_'});
+                            data.epocs = safeRmField(data.epocs, {'Pe1_','St1_','IL1_'});
                         end
                         if isfield(data.epocs,'CL1_') == 1
-                            data.epocs = rmfield(data.epocs, {'CL1_'});
+                            data.epocs = safeRmField(data.epocs, {'CL1_'});
                         end
                         if isfield(data.epocs,'Rw1_') == 1
-                            data.epocs = rmfield(data.epocs, {'Rw1_','St1_','RL1_','Cam1','HL1_'});
+                            data.epocs = safeRmField(data.epocs, {'Rw1_','St1_','RL1_','Cam1','HL1_'});
                         end
                         taskC = char(brokenID{5});
                         treatmentC = char(brokenID{6});
@@ -188,6 +189,7 @@ elseif ttlType == 1
         [~,name,~] = fileparts(FILEPATH);
         emptyID = 'Empty';
         brokenID = strsplit(name,'_');
+        requireTokens(brokenID, 4, name, 'Self Admin');
         animalIDA = char(brokenID{1});
         animalIDC = char(brokenID{3});
         emptylogicA = strcmp(animalIDA,emptyID);
@@ -202,10 +204,10 @@ elseif ttlType == 1
                         continue
                     elseif emptylogicA == 0
                         if isfield(data.epocs,'bRL_') == 1
-                            data.epocs = rmfield(data.epocs, {'bRL_','bRw_','bHL_'});
+                            data.epocs = safeRmField(data.epocs, {'bRL_','bRw_','bHL_'});
                         end
                         if isfield(data.epocs,'bLL_') == 1
-                            data.epocs = rmfield(data.epocs, {'bLL_'});
+                            data.epocs = safeRmField(data.epocs, {'bLL_'});
                         end
                         taskA = char(brokenID{2});
                         newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
@@ -227,10 +229,10 @@ elseif ttlType == 1
                         continue
                     elseif emptylogicC == 0
                         if isfield(data.epocs,'aRL_') == 1
-                            data.epocs = rmfield(data.epocs, {'aRL_','aRw_','aHL_'});
+                            data.epocs = safeRmField(data.epocs, {'aRL_','aRw_','aHL_'});
                         end
                         if isfield(data.epocs,'aLL_') == 1
-                            data.epocs = rmfield(data.epocs, {'aLL_'});
+                            data.epocs = safeRmField(data.epocs, {'aLL_'});
                         end
                         taskC = char(brokenID{4});
                         newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
@@ -255,12 +257,12 @@ elseif ttlType == 1
                         totFiles = totFiles - 1;
                         continue
                     elseif emptylogicA == 0
-                        data.streams = rmfield(data.streams, {'x405C','x465C'});
+                        data.streams = safeRmField(data.streams, {'x405C','x465C'});
                         if isfield(data.epocs,'bRL_') == 1
-                            data.epocs = rmfield(data.epocs, {'bRL_','bRw_','bHL_'});
+                            data.epocs = safeRmField(data.epocs, {'bRL_','bRw_','bHL_'});
                         end
                         if isfield(data.epocs,'bLL_') == 1
-                            data.epocs = rmfield(data.epocs, {'bLL_'});
+                            data.epocs = safeRmField(data.epocs, {'bLL_'});
                         end
                         taskA = char(brokenID{2});
                         newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
@@ -282,12 +284,12 @@ elseif ttlType == 1
                         totFiles = totFiles - 1;
                         continue
                     elseif emptylogicC == 0
-                        data.streams = rmfield(data.streams, {'x405A','x465A'});
+                        data.streams = safeRmField(data.streams, {'x405A','x465A'});
                         if isfield(data.epocs,'aRL_') == 1
-                            data.epocs = rmfield(data.epocs, {'aRL_','aRw_','aHL_'});
+                            data.epocs = safeRmField(data.epocs, {'aRL_','aRw_','aHL_'});
                         end
                         if isfield(data.epocs,'aLL_') == 1
-                            data.epocs = rmfield(data.epocs, {'aLL_'});
+                            data.epocs = safeRmField(data.epocs, {'aLL_'});
                         end
                         taskC = char(brokenID{4});
                         newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
@@ -312,6 +314,7 @@ elseif ttlType == 2
         [~,name,~] = fileparts(FILEPATH);
         emptyID = 'Empty';
         brokenID = strsplit(name,'_');
+        requireTokens(brokenID, 4, name, 'VTO');
         animalIDA = char(brokenID{1});
         animalIDC = char(brokenID{3});
         emptylogicA = strcmp(animalIDA,emptyID);
@@ -326,7 +329,7 @@ elseif ttlType == 2
                         continue
                     elseif emptylogicA == 0
                         if isfield(data.epocs,'Rw2_') == 1
-                            data.epocs = rmfield(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
+                            data.epocs = safeRmField(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
                         end
                         taskA = char(brokenID{2});
                         newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
@@ -348,7 +351,7 @@ elseif ttlType == 2
                         continue
                     elseif emptylogicC == 0
                         if isfield(data.epocs,'Rw2_') == 1
-                            data.epocs = rmfield(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
+                            data.epocs = safeRmField(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
                         end
                         taskC = char(brokenID{4});
                         newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
@@ -373,9 +376,9 @@ elseif ttlType == 2
                         totFiles = totFiles - 1;
                         continue
                     elseif emptylogicA == 0
-                        data.streams = rmfield(data.streams, {'x405C','x465C'});
+                        data.streams = safeRmField(data.streams, {'x405C','x465C'});
                         if isfield(data.epocs,'Rw2_') == 1
-                            data.epocs = rmfield(data.epocs, {'Rw2_','St2_','RL2_','HL2_','Cam2'});
+                            data.epocs = safeRmField(data.epocs, {'Rw2_','St2_','RL2_','HL2_','Cam2'});
                         end
                         taskA = char(brokenID{2});
                         newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
@@ -397,9 +400,9 @@ elseif ttlType == 2
                         totFiles = totFiles - 1;
                         continue
                     elseif emptylogicC == 0
-                        data.streams = rmfield(data.streams, {'x405A','x465A'});
+                        data.streams = safeRmField(data.streams, {'x405A','x465A'});
                         if isfield(data.epocs,'Rw1_') == 1
-                            data.epocs = rmfield(data.epocs, {'Rw1_','St1_','RL1_','HL1_','Cam1'});
+                            data.epocs = safeRmField(data.epocs, {'Rw1_','St1_','RL1_','HL1_','Cam1'});
                         end
                         taskC = char(brokenID{4});
                         newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
@@ -424,3 +427,18 @@ fprintf("Files saved: %d\n",totFiles)
 fprintf("Save location: %s\n",savDir)
 
 NERD_STATS(toc,totFiles);
+
+function s = safeRmField(s, wantedFields)
+existingFields = intersect(fieldnames(s), wantedFields);
+if ~isempty(existingFields)
+    s = rmfield(s, existingFields);
+end
+end
+
+function requireTokens(tokens, minCount, filename, modeName)
+if numel(tokens) < minCount
+    error('mat2mats:BadFilename', ...
+        '%s mode expects at least %d underscore-separated tokens in %s.', ...
+        modeName, minCount, filename);
+end
+end

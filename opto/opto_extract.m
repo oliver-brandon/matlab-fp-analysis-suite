@@ -58,7 +58,8 @@ for m = 1:height(epoc)
     [~,cTTEn] = min(abs(session_time - cueTTEnd));
     epocTTSigRaw = SIGNAL_raw(1,cTTSt:cTTEn);
     if length(epocTTSigRaw) < epocArrayLen
-        mn = mean(epocTTSigRaw(1,end-10:end));
+        tailStart = max(1, length(epocTTSigRaw) - 10);
+        mn = mean(epocTTSigRaw(1,tailStart:end), 'omitnan');
         epocTTSigRaw(1,end:epocArrayLen) = mn;
     elseif length(epocTTSigRaw) > epocArrayLen
         op = length(epocTTSigRaw);
@@ -80,15 +81,7 @@ for n = 1:height(epoc)
     stdBase_dFF = std(epocTT_dFF(n,baseSt:baseEn));
     epocTT_z(n,1:epocArrayLen) = (epocTT_dFF(n,1:epocArrayLen) - meanBase_dFF) / stdBase_dFF;
     if adjustBase == 1
-        if epocTT_z(n,idx) < 0
-            val = epocTT_z(n,idx);
-            diff = 0 - val;
-            epocTT_z(n,1:epocArrayLen) = epocTT_z(n,1:epocArrayLen) + abs(diff);
-        elseif epocTT_z(n,idx) > 0
-            val = epocTT_z(n,idx);
-            diff = 0 - val;
-            epocTT_z(n,1:epocArrayLen) = epocTT_z(n,1:epocArrayLen) - abs(diff);
-        end
+        % Metrics use unshifted z-scored traces. Baseline shifts are plot-only.
     else
         disp("")
     end

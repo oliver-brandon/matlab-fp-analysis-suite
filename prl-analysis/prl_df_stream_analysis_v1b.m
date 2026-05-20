@@ -128,7 +128,8 @@ for i = 1:numFiles
                 [~,levEn] = min(abs(session_time - leverEnd));
                 leverSigRaw = SIGNAL_raw(1,levSt:levEn);
                 if length(leverSigRaw) < epocArrayLen
-                    mn = mean(leverSigRaw(1,end-10:end));
+                    tailStart = max(1, length(leverSigRaw) - 10);
+                    mn = mean(leverSigRaw(1,tailStart:end), 'omitnan');
                     leverSigRaw(1,end:epocArrayLen) = mn;
                 elseif length(leverSigRaw) > epocArrayLen
                     op = length(leverSigRaw);
@@ -175,7 +176,8 @@ for i = 1:numFiles
                 [~,windEn] = min(abs(session_time - windowEnd(1)));
                 cueSigRaw = SIGNAL_raw(1, windSt:windEn);
                 if length(cueSigRaw) < epocArrayLen
-                    mn = mean(cueSigRaw(1,end-10:end));
+                    tailStart = max(1, length(cueSigRaw) - 10);
+                    mn = mean(cueSigRaw(1,tailStart:end), 'omitnan');
                     cueSigRaw(1,end:epocArrayLen) = mn;
                 elseif length(cueSigRaw) > epocArrayLen
                     op = length(cueSigRaw);
@@ -258,7 +260,8 @@ for i = 1:numFiles
                 [~,levEn] = min(abs(session_time - leverEnd));
                 leverSigRaw = SIGNAL_raw(1,levSt:levEn);
                 if length(leverSigRaw) < epocArrayLen
-                    mn = mean(leverSigRaw(1,end-10:end));
+                    tailStart = max(1, length(leverSigRaw) - 10);
+                    mn = mean(leverSigRaw(1,tailStart:end), 'omitnan');
                     leverSigRaw(1,end:epocArrayLen) = mn;
                 elseif length(leverSigRaw) > epocArrayLen
                     op = length(leverSigRaw);
@@ -304,7 +307,8 @@ for i = 1:numFiles
                 [~,windEn] = min(abs(session_time - windowEnd(1)));
                 cueSigRaw = SIGNAL_raw(1, windSt:windEn);
                 if length(cueSigRaw) < epocArrayLen
-                    mn = mean(cueSigRaw(1,end-10:end));
+                    tailStart = max(1, length(cueSigRaw) - 10);
+                    mn = mean(cueSigRaw(1,tailStart:end), 'omitnan');
                     cueSigRaw(1,end:epocArrayLen) = mn;
                 elseif length(cueSigRaw) > epocArrayLen
                     op = length(cueSigRaw);
@@ -342,4 +346,3 @@ end
 idList = cell2table(IDs', 'VariableNames',{'ID'});
 phaseList = cell2table(phaseList', 'VariableNames',{'Phase'});
 treatList = cell2table(treatList', 'VariableNames',{'Treatment'});
-

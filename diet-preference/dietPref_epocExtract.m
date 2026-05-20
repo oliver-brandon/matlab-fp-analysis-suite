@@ -85,10 +85,7 @@ if batch_analyze == 1
         allSignals = cell2mat(data.streams.(ISOS).filtered');
         % downsample 10x and average 405 signal
         N = 10;
-        F405 = zeros(size(allSignals(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals,1)
-            F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-        end
+        F405 = blockMeanDownsample(allSignals, N);
         minLength1 = size(F405,2);
         % Create mean signal, standard error of signal, and DC offset of 405 signal
         meanSignal1 = mean(F405);
@@ -97,10 +94,7 @@ if batch_analyze == 1
         
         % downsample 10x and average 465 signal
         allSignals = cell2mat(data.streams.(GRABDA).filtered');
-        F465 = zeros(size(allSignals(:,1:N:end-N+1)));
-        for ii = 1:size(allSignals,1)
-            F465(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-        end
+        F465 = blockMeanDownsample(allSignals, N);
         minLength2_DLS = size(F465,2);
         
         % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -192,10 +186,7 @@ elseif batch_analyze == 2
     allSignals = cell2mat(data.streams.(ISOS).filtered');
     % downsample 10x and average 405 signal
     N = 10;
-    F405 = zeros(size(allSignals(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals,1)
-        F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-    end
+    F405 = blockMeanDownsample(allSignals, N);
     minLength1 = size(F405,2);
     % Create mean signal, standard error of signal, and DC offset of 405 signal
     meanSignal1 = mean(F405);
@@ -204,10 +195,7 @@ elseif batch_analyze == 2
     
     % downsample 10x and average 465 signal
     allSignals = cell2mat(data.streams.(GRABDA).filtered');
-    F465 = zeros(size(allSignals(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals,1)
-        F465(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-    end
+    F465 = blockMeanDownsample(allSignals, N);
     minLength2_DLS = size(F465,2);
     
     % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -260,7 +248,7 @@ elseif batch_analyze == 2
     % Algorithm sourced from Tom Davidson's Github:
     % https://github.com/tjd2002/tjd-shared-code/blob/master/matlab/photometry/FP_normalize.m
     
-    bls = polyfit(F465(1:end), F405(1:end), 1);
+    bls = polyfit(F405(1:end), F465(1:end), 1);
     Y_fit_all = bls(1) .* F405 + bls(2);
     Y_dF_all = F465 - Y_fit_all;
     

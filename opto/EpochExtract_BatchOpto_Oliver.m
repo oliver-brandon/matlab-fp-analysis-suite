@@ -45,6 +45,7 @@ for k = 1:numFiles
     if isfield(data.epocs, "events")
         data.epocs = rmfield(data.epocs, 'events');
     end
+    rawData = data;
     % Use TDTfilter to extract data around our epoc event
     % Using the 'TIME' parameter extracts data only from the time range around
     % our epoc event. Use the 'VALUES' parameter to specify allowed values of
@@ -68,18 +69,12 @@ for k = 1:numFiles
     
     % downsample 10x and average 405 signal
     N = 10;
-    F405 = zeros(size(allSignals(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals,1)
-        F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-    end
+    F405 = blockMeanDownsample(allSignals, N);
     minLength1 = size(F405,2);   
     
     % downsample 10x and average 465 signal
     allSignals = cell2mat(data.streams.(STREAM_STORE2).filtered');
-    F465 = zeros(size(allSignals(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals,1)
-        F465(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-    end
+    F465 = blockMeanDownsample(allSignals, N);
     minLength2 = size(F465,2);
     
     %% Plot Epoch Averaged Response
@@ -88,7 +83,7 @@ for k = 1:numFiles
     ts1 = TRANGE(1) + (1:minLength1) / data.streams.(STREAM_STORE1).fs*N;
     ts2 = TRANGE(1) + (1:minLength2) / data.streams.(STREAM_STORE2).fs*N;
     
-    bls = polyfit(F465(1:end), F405(1:end), 1);
+    bls = polyfit(F405(1:end), F465(1:end), 1);
     Y_fit_all = bls(1) .* F405 + bls(2);
     Y_dF_all = F465 - Y_fit_all;
     
@@ -130,15 +125,7 @@ for k = 1:numFiles
     %%%%%%%%%%%%%%%%%%%%LEVERS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     
-    if dataType == 1
-        data = TDTbin2mat(filename, 'TYPE', {'epocs', 'streams'});% TDT function for extracting data to struct 'data'
-    elseif dataType == 2
-        load(filename)
-    end
-    
-    if isfield(data.epocs, "events")
-        data.epocs = rmfield(data.epocs, 'events');
-    end
+    data = rawData;
     
     % Use TDTfilter to extract data around our epoc event
     % Using the 'TIME' parameter extracts data only from the time range around
@@ -168,18 +155,12 @@ for k = 1:numFiles
     
     % downsample 10x and average 405 signal
     N = 10;
-    F405 = zeros(size(allSignals2(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals2,1)
-        F405(ii,:) = arrayfun(@(i) mean(allSignals2(ii,i:i+N-1)),1:N:length(allSignals2)-N+1);
-    end
+    F405 = blockMeanDownsample(allSignals2, N);
     minLength1 = size(F405,2);
     
     % downsample 10x and average 465 signal
     allSignals2 = cell2mat(data.streams.(STREAM_STORE2).filtered');
-    F465 = zeros(size(allSignals2(:,1:N:end-N+1)));
-    for ii = 1:size(allSignals2,1)
-        F465(ii,:) = arrayfun(@(i) mean(allSignals2(ii,i:i+N-1)),1:N:length(allSignals2)-N+1);
-    end
+    F465 = blockMeanDownsample(allSignals2, N);
     minLength2 = size(F465,2);
     
     %% Plot Epoch Averaged Response
@@ -188,7 +169,7 @@ for k = 1:numFiles
     ts1 = TRANGE(1) + (1:minLength1) / data.streams.(STREAM_STORE1).fs*N;
     ts2 = TRANGE(1) + (1:minLength2) / data.streams.(STREAM_STORE2).fs*N;
     
-    bls = polyfit(F465(1:end), F405(1:end), 1);
+    bls = polyfit(F405(1:end), F465(1:end), 1);
     Y_fit_all = bls(1) .* F405 + bls(2);
     Y_dF_all = F465 - Y_fit_all;
     
@@ -238,6 +219,8 @@ signals.meta.files = dataFiles;
 signals.meta.TRANGE = TRANGE;
 signals.meta.BASELINE_PER = BASELINE_PER;
 signals.meta.smoothFactor = smoothFactor;
+defaults = analysisDefaults();
+signals.meta.pipelineVersion = defaults.pipelineVersion;
 toc
 disp("Successfully analyzed .mat files")
 fprintf("Files analyzed: %d\n", numFiles)

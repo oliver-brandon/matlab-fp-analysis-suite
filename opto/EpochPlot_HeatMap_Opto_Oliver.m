@@ -90,10 +90,7 @@ allSignals = cell2mat(data.streams.(STREAM_STORE1).filtered');
 
 % downsample 10x and average 405 signal
 N = 10;
-F405 = zeros(size(allSignals(:,1:N:end-N+1)));
-for ii = 1:size(allSignals,1)
-    F405(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-end
+F405 = blockMeanDownsample(allSignals, N);
 minLength1 = size(F405,2);
 
 % Create mean signal, standard error of signal, and DC offset of 405 signal
@@ -103,10 +100,7 @@ dcSignal1 = mean(meanSignal1);
 
 % downsample 10x and average 465 signal
 allSignals = cell2mat(data.streams.(STREAM_STORE2).filtered');
-F465 = zeros(size(allSignals(:,1:N:end-N+1)));
-for ii = 1:size(allSignals,1)
-    F465(ii,:) = arrayfun(@(i) mean(allSignals(ii,i:i+N-1)),1:N:length(allSignals)-N+1);
-end
+F465 = blockMeanDownsample(allSignals, N);
 minLength2 = size(F465,2);
 
 % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -124,7 +118,7 @@ ts2 = TRANGE(1) + (1:minLength2) / data.streams.(STREAM_STORE2).fs*N;
 meanSignal1 = meanSignal1 - dcSignal1;
 meanSignal2 = meanSignal2 - dcSignal2;
 
-bls = polyfit(F465(1:end), F405(1:end), 1);
+bls = polyfit(F405(1:end), F465(1:end), 1);
 Y_fit_all = bls(1) .* F405 + bls(2);
 Y_dF_all = F465 - Y_fit_all;
 
@@ -338,10 +332,7 @@ allSignals2 = cell2mat(data.streams.(STREAM_STORE1).filtered');
 
 % downsample 10x and average 405 signal
 N = 10;
-F405 = zeros(size(allSignals2(:,1:N:end-N+1)));
-for ii = 1:size(allSignals2,1)
-    F405(ii,:) = arrayfun(@(i) mean(allSignals2(ii,i:i+N-1)),1:N:length(allSignals2)-N+1);
-end
+F405 = blockMeanDownsample(allSignals2, N);
 minLength1 = size(F405,2);
 
 % Create mean signal, standard error of signal, and DC offset of 405 signal
@@ -351,10 +342,7 @@ dcSignal1 = mean(meanSignal1);
 
 % downsample 10x and average 465 signal
 allSignals2 = cell2mat(data.streams.(STREAM_STORE2).filtered');
-F465 = zeros(size(allSignals2(:,1:N:end-N+1)));
-for ii = 1:size(allSignals2,1)
-    F465(ii,:) = arrayfun(@(i) mean(allSignals2(ii,i:i+N-1)),1:N:length(allSignals2)-N+1);
-end
+F465 = blockMeanDownsample(allSignals2, N);
 minLength2 = size(F465,2);
 
 % Create mean signal, standard error of signal, and DC offset of 465 signal
@@ -372,7 +360,7 @@ ts2 = TRANGE(1) + (1:minLength2) / data.streams.(STREAM_STORE2).fs*N;
 meanSignal1 = meanSignal1 - dcSignal1;
 meanSignal2 = meanSignal2 - dcSignal2;
 
-bls = polyfit(F465(1:end), F405(1:end), 1);
+bls = polyfit(F405(1:end), F465(1:end), 1);
 Y_fit_all = bls(1) .* F405 + bls(2);
 Y_dF_all = F465 - Y_fit_all;
 

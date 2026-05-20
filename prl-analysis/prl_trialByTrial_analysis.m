@@ -142,7 +142,8 @@ for i = 1:numFiles
         [~,epoEn] = min(abs(session_time - leverEnd));
         epocSnip = SIGNAL_raw(1,epoSt:epoEn);
         if length(epocSnip) < epocArrayLen
-            mn = mean(epocSnip(1,end-10:end));
+            tailStart = max(1, length(epocSnip) - 10);
+            mn = mean(epocSnip(1,tailStart:end), 'omitnan');
             epocSnip(1,end:epocArrayLen) = mn;
         elseif length(epocSnip) > epocArrayLen
             op = length(epocSnip);
@@ -163,16 +164,7 @@ for i = 1:numFiles
         meanBase_dFF = mean(epoc_dFF(k,baseSt:baseEn));
         stdBase_dFF = std(epoc_dFF(k,baseSt:baseEn));
         epocSig_z(k,1:epocArrayLen) = (epoc_dFF(k,1:epocArrayLen) - meanBase_dFF) / stdBase_dFF;
-        % adjusts streams to baseline of zero at -0.5s %
-        if epocSig_z(k,idx) < 0
-            val = epocSig_z(k,idx);
-            diff = 0 - val;
-            epocSig_z(k,1:epocArrayLen) = epocSig_z(k,1:epocArrayLen) + abs(diff);
-        elseif epocSig_z(k,idx) > 0
-            val = epocSig_z(k,idx);
-            diff = 0 - val;
-            epocSig_z(k,1:epocArrayLen) = epocSig_z(k,1:epocArrayLen) - abs(diff);
-        end
+        % Metrics use unshifted z-scored traces. Baseline shifts are plot-only.
     end
     epocSig_z_smooth = zeros(size(epocSig_z));
     for z = 1:height(epocSig_z)

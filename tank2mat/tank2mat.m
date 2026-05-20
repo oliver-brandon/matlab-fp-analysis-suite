@@ -32,6 +32,10 @@ tic
 myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(~endsWith({myFiles.name}, {'.pdf','.m','.prism','.xlsx'}));
+isTdtBlock = arrayfun(@(f) f.isdir && ...
+    ~isempty(dir(fullfile(myDir, f.name, '*.tev'))) && ...
+    ~isempty(dir(fullfile(myDir, f.name, '*.tsq'))), myFiles);
+myFiles = myFiles(isTdtBlock);
 numFiles = length(myFiles);
 totFiles = numFiles; % variable to track how many files actually get saved
 for i = 1:numFiles
@@ -47,12 +51,12 @@ for i = 1:numFiles
     fprintf("Extracting tank %d of %d...\n",i,numFiles)
     data = TDTbin2mat(BLOCKPATH,'TYPE',({'epocs','streams'}));
     if isfield(data.streams, 'Fi1r')
-        data.streams = rmfield(data.streams, {'Fi1r','Fi1d'});
+        data.streams = safeRmField(data.streams, {'Fi1r','Fi1d'});
     else
         disp('')
     end
     if isfield(data.streams, 'Fi2r')
-        data.streams = rmfield(data.streams, {'Fi2r','Fi2d'});
+        data.streams = safeRmField(data.streams, {'Fi2r','Fi2d'});
     else
         disp('')
     end
@@ -69,6 +73,8 @@ for i = 1:numFiles
                 TTLs = 2;
             else
                 disp('File is missing TTLs')
+                totFiles = totFiles - 1;
+                continue
             end
             disp('Infusing PRL related epocs...')
             data = prl_df_epocs(data,TTLs);
@@ -120,3 +126,10 @@ fprintf("Files saved: %d\n",totFiles)
 fprintf("Save location: %s\n",savDir)
 
 NERD_STATS(toc,numFiles);
+
+function s = safeRmField(s, wantedFields)
+existingFields = intersect(fieldnames(s), wantedFields);
+if ~isempty(existingFields)
+    s = rmfield(s, existingFields);
+end
+end

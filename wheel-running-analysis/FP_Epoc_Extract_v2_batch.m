@@ -24,8 +24,8 @@ myFiles = dir(myDir); %gets all tanks in directory%
 myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name}, {'.mat'}));
 numFiles = length(myFiles);
-IDs = cell(size(numFiles,1));
-dayList = cell(size(numFiles,1));
+IDs = cell(numFiles,1);
+dayList = cell(numFiles,1);
 fprintf("Starting batch extraction of %d files...\n",numFiles)
 for i = 1:numFiles
     filename = fullfile(myDir, myFiles(i).name);
@@ -46,12 +46,15 @@ for i = 1:numFiles
     runStart = data.epocs.runStart.onset;
     runStop = data.epocs.runStop.onset;
     onWheel = data.epocs.onWheel.onset;
-    offWheel = data.epocs.onWheel.onset;
+    offWheel = data.epocs.offWheel.onset;
     rSfiltered = [];
     oWfiltered = [];
     for j = 1:length(runStart)
         rS = runStart(j);
         idx = find(onWheel<(rS-filter),1,'last');
+        if isempty(idx)
+            continue
+        end
         oWfiltered = [oWfiltered;onWheel(idx)];
       
     end
@@ -59,11 +62,14 @@ for i = 1:numFiles
     for k = 1:length(oWfiltered)
         oW = oWfiltered(k);
         idx = find(runStart>(oW+filter),1,'first');
+        if isempty(idx)
+            continue
+        end
         rSfiltered = [rSfiltered;runStart(idx)];
     end
 
     %time array used for all streams%
-    session_time = (1:length(data.streams.(SIGNAL).data))/data.streams.(SIGNAL).fs;
+    session_time = (1:length(data.streams.(DLS).data))/data.streams.(DLS).fs;
     ind = find(session_time>t,1);% find first index of when time crosses threshold
     session_time = session_time(ind:end); % reformat vector to only include allowed time
 
@@ -86,8 +92,8 @@ for i = 1:numFiles
     NAc_ISOS_raw = NAc_ISOS_raw(1:minStreamLength);
     NAc_SIGNAL_raw = NAc_SIGNAL_raw(1:minStreamLength);
 
-    SIGNAL_raw = data.streams.(SIGNAL).data(ind:end);
-    ISOS_raw = data.streams.(ISOS).data(ind:end);
+    SIGNAL_raw = DLS_SIGNAL_raw;
+    ISOS_raw = DLS_ISOS_raw;
 
     session_time = downsample(session_time, N);
     ts1 = -baseWindow + (1:epocArrayLen) / data.streams.(DLS).fs*N;
@@ -125,7 +131,8 @@ for i = 1:numFiles
         epocSigRaw = SIGNAL_raw(1,windSt:windEn);
 
         if length(epocSigRaw) < epocArrayLen
-            mn = mean(epocSigRaw(1,end-10:end));
+            tailStart = max(1, length(epocSigRaw) - 10);
+            mn = mean(epocSigRaw(1,tailStart:end), 'omitnan');
             epocSigRaw(1,end:epocArrayLen) = mn;
         elseif length(epocSigRaw) > epocArrayLen
             op = length(epocSigRaw);
