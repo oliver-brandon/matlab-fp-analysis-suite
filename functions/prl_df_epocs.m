@@ -47,16 +47,16 @@ if TTLs == 1
     incorrect_norewardA = nonzeros(incorrect_norewardA(:,1));
     
     if isempty(correct_rewardedA) == 1
-        correct_rewardedA = 0;
+        correct_rewardedA = [];
     end
     if isempty(correct_norewardA) == 1
-        correct_norewardA = 0;
+        correct_norewardA = [];
     end
     if isempty(incorrect_rewardedA) == 1
-        incorrect_rewardedA = 0;
+        incorrect_rewardedA = [];
     end
     if isempty(incorrect_norewardA) == 1
-        incorrect_norewardA = 0;
+        incorrect_norewardA = [];
     end
     data.epocs.cRewA.name = 'cRewA';
     data.epocs.cRewA.onset = correct_rewardedA;
@@ -74,6 +74,50 @@ if TTLs == 1
     data.epocs.iNoRewA.onset = incorrect_norewardA;
     data.epocs.iNoRewA.offset = incorrect_norewardA+1;
     data.epocs.iNoRewA.data = ones(height(incorrect_norewardA))*4;
+
+    corLeverTSA = sort([correct_rewardedA; correct_norewardA],'ascend');
+    cueCorrectA = [];
+    if ~isempty(corLeverTSA)
+        indicies = zeros(size(corLeverTSA));
+        for j = 1:length(corLeverTSA)
+            indicies(j) = find(data.epocs.St1_.onset < corLeverTSA(j),1,'last');
+        end
+        cueCorrectA = data.epocs.St1_.onset(indicies);
+    end
+
+    incLeverTSA = sort([incorrect_rewardedA; incorrect_norewardA],'ascend');
+    cueIncorrectA = [];
+    if ~isempty(incLeverTSA)
+        indicies = zeros(size(incLeverTSA));
+        for k = 1:length(incLeverTSA)
+            indicies(k) = find(data.epocs.St1_.onset < incLeverTSA(k), 1, 'last');
+        end
+        cueIncorrectA = data.epocs.St1_.onset(indicies);
+    end
+
+    data.epocs.cueCorA.name = 'cueCorA';
+    data.epocs.cueCorA.onset = cueCorrectA;
+    data.epocs.cueCorA.offset = cueCorrectA+1;
+    data.epocs.cueCorA.data = ones(height(cueCorrectA))*5;
+    data.epocs.cueIncA.name = 'cueIncA';
+    data.epocs.cueIncA.onset = cueIncorrectA;
+    data.epocs.cueIncA.offset = cueIncorrectA+1;
+    data.epocs.cueIncA.data = ones(height(cueIncorrectA))*6;
+    if ~isfield(data.epocs, 'CL1_')
+        incorrect = data.epocs.IL1_.onset;
+        levers = data.epocs.IL1_.onset;
+    elseif ~isfield(data.epocs, 'IL1_')
+        correct = data.epocs.CL1_.onset;
+        levers = data.epocs.CL1_.onset;
+    elseif isfield(data.epocs, 'CL1_') && isfield(data.epocs, 'IL1_')
+        correct = data.epocs.CL1_.onset;
+        incorrect = data.epocs.IL1_.onset;
+        levers = sort([correct;incorrect]);
+    end    
+    data.epocs.levers.onset = levers;
+    data.epocs.levers.offset = levers + 1;
+    data.epocs.levers.name = 'levers';
+    data.epocs.levers.data = ones(height(levers),1);
 
 elseif TTLs == 2
     cueTSC = data.epocs.St2_.onset;
@@ -119,16 +163,16 @@ elseif TTLs == 2
     incorrect_rewardedC = nonzeros(incorrect_rewardedC(:,1));
     incorrect_norewardC = nonzeros(incorrect_norewardC(:,1));
     if isempty(correct_rewardedC) == 1
-        correct_rewardedC = 0;
+        correct_rewardedC = [];
     end
     if isempty(correct_norewardC) == 1
-        correct_norewardC = 0;
+        correct_norewardC = [];
     end
     if isempty(incorrect_rewardedC) == 1
-        incorrect_rewardedC = 0;
+        incorrect_rewardedC = [];
     end
     if isempty(incorrect_norewardC) == 1
-        incorrect_norewardC = 0;
+        incorrect_norewardC = [];
     end
     data.epocs.cRewC.name = 'cRewC';
     data.epocs.cRewC.onset = correct_rewardedC;
@@ -146,4 +190,49 @@ elseif TTLs == 2
     data.epocs.iNoRewC.onset = incorrect_norewardC;
     data.epocs.iNoRewC.offset = incorrect_norewardC+1;
     data.epocs.iNoRewC.data = ones(height(incorrect_norewardC))*4;
+    
+    corLeverTSC = sort([correct_rewardedC; correct_norewardC],'ascend');
+    cueCorrectC = [];
+    if ~isempty(corLeverTSC)
+        indicies = zeros(size(corLeverTSC));
+        for j = 1:length(corLeverTSC)
+            indicies(j) = find(data.epocs.St2_.onset < corLeverTSC(j),1,'last');
+        end
+        cueCorrectC = data.epocs.St2_.onset(indicies);
+    end
+
+    incLeverTSC = sort([incorrect_rewardedC; incorrect_norewardC],'ascend');
+    cueIncorrectC = [];
+    if ~isempty(incLeverTSC)
+        indicies = zeros(size(incLeverTSC));
+        for k = 1:length(incLeverTSC)
+            indicies(k) = find(data.epocs.St2_.onset < incLeverTSC(k), 1, 'last');
+        end
+        cueIncorrectC = data.epocs.St2_.onset(indicies);
+    end
+
+    data.epocs.cueCorC.name = 'cueCorC';
+    data.epocs.cueCorC.onset = cueCorrectC;
+    data.epocs.cueCorC.offset = cueCorrectC+1;
+    data.epocs.cueCorC.data = ones(height(cueCorrectC))*5;
+    data.epocs.cueIncC.name = 'cueIncC';
+    data.epocs.cueIncC.onset = cueIncorrectC;
+    data.epocs.cueIncC.offset = cueIncorrectC+1;
+    data.epocs.cueIncC.data = ones(height(cueIncorrectC))*6;
+
+    if ~isfield(data.epocs, 'CL2_')
+        incorrect = data.epocs.IL1_.onset;
+        levers = data.epocs.IL1_.onset;
+    elseif ~isfield(data.epocs, 'IL2_')
+        correct = data.epocs.CL1_.onset;
+        levers = data.epocs.CL1_.onset;
+    elseif isfield(data.epocs, 'CL2_') && isfield(data.epocs, 'IL2_')
+        correct = data.epocs.CL1_.onset;
+        incorrect = data.epocs.IL1_.onset;
+        levers = sort([correct;incorrect]);
+    end    
+    data.epocs.levers.onset = levers;
+    data.epocs.levers.offset = levers + 1;
+    data.epocs.levers.name = 'levers';
+    data.epocs.levers.data = ones(height(levers),1);
 end

@@ -74,6 +74,36 @@ if isfield(data.streams, 'x405A') == 1
     data.epocs.iNoRewA.onset = incorrect_norewardA;
     data.epocs.iNoRewA.offset = incorrect_norewardA+1;
     data.epocs.iNoRewA.data = ones(height(incorrect_norewardA))*4;
+
+    corLeverTSA = sort([correct_rewardedA; correct_norewardA],'ascend');
+    cueCorrectA = [];
+    if ~isempty(corLeverTSA)
+        indicies = zeros(size(corLeverTSA));
+        for j = 1:length(corLeverTSA)
+            indicies(j) = find(data.epocs.St1_.onset < corLeverTSA(j),1,'last');
+        end
+        cueCorrectA = data.epocs.St1_.onset(indicies);
+    end
+
+    incLeverTSA = sort([incorrect_rewardedA; incorrect_norewardA],'ascend');
+    cueIncorrectA = [];
+    if ~isempty(incLeverTSA)
+        indicies = zeros(size(incLeverTSA));
+        for k = 1:length(incLeverTSA)
+            indicies(k) = find(data.epocs.St1_.onset < incLeverTSA(k), 1, 'last');
+        end
+        cueIncorrectA = data.epocs.St1_.onset(indicies);
+    end
+
+    data.epocs.cueCorA.name = 'cueCorA';
+    data.epocs.cueCorA.onset = cueCorrectA;
+    data.epocs.cueCorA.offset = cueCorrectA+1;
+    data.epocs.cueCorA.data = ones(height(cueCorrectA))*5;
+    data.epocs.cueIncA.name = 'cueIncA';
+    data.epocs.cueIncA.onset = cueIncorrectA;
+    data.epocs.cueIncA.offset = cueIncorrectA+1;
+    data.epocs.cueIncA.data = ones(height(cueIncorrectA))*6;
+
 elseif isfield(data.streams, 'x405C') == 1
    
     cueTSC = data.epocs.St2_.onset;
@@ -130,6 +160,7 @@ elseif isfield(data.streams, 'x405C') == 1
     if isempty(incorrect_norewardC) == 1
         incorrect_norewardC = 0;
     end
+
     data.epocs.cRewC.name = 'cRewC';
     data.epocs.cRewC.onset = correct_rewardedC;
     data.epocs.cRewC.offset = correct_rewardedC+1;
@@ -146,4 +177,33 @@ elseif isfield(data.streams, 'x405C') == 1
     data.epocs.iNoRewC.onset = incorrect_norewardC;
     data.epocs.iNoRewC.offset = incorrect_norewardC+1;
     data.epocs.iNoRewC.data = ones(height(incorrect_norewardC))*4;
+
+    corLeverTSC = sort([correct_rewardedC; correct_norewardC],'ascend');
+    cueCorrectC = [];
+    if ~isempty(corLeverTSC)
+        indicies = zeros(size(corLeverTSC));
+        for j = 1:length(corLeverTSC)
+            indicies(j) = find(data.epocs.St2_.onset < corLeverTSC(j),1,'last');
+        end
+        cueCorrectC = data.epocs.St2_.onset(indicies);
+    end
+
+    incLeverTSC = sort([incorrect_rewardedC; incorrect_norewardC],'ascend');
+    cueIncorrectC = [];
+    if ~isempty(incLeverTSC)
+        indicies = zeros(size(incLeverTSC));
+        for k = 1:length(incLeverTSC)
+            indicies(k) = find(data.epocs.St2_.onset < incLeverTSC(k), 1, 'last');
+        end
+        cueIncorrectC = data.epocs.St2_.onset(indicies);
+    end
+
+    data.epocs.cueCorC.name = 'cueCorC';
+    data.epocs.cueCorC.onset = cueCorrectC;
+    data.epocs.cueCorC.offset = cueCorrectC+1;
+    data.epocs.cueCorC.data = ones(height(cueCorrectC))*5;
+    data.epocs.cueIncC.name = 'cueIncC';
+    data.epocs.cueIncC.onset = cueIncorrectC;
+    data.epocs.cueIncC.offset = cueIncorrectC+1;
+    data.epocs.cueIncC.data = ones(height(cueIncorrectC))*6;
 end

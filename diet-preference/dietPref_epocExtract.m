@@ -15,9 +15,9 @@ VERSION = "1.0";
 clear all; clc; close all;
 %removes polyfit warning%
 warning('off','all');
-disp(VERSION)
 
-batch_analyze = 1;%1 = batch of tanks in folder, 2 = single tank analysis
+
+batch_analyze = 2;%1 = batch of tanks in folder, 2 = single tank analysis
 EPOC = 'WDApp'; % Stimulation event to center on (WD_app,WD_awy,SD_app,SD_awy)
 arena_number = 1;% arena 1 = first ID in tank name, arena 2 = second ID
 if arena_number == 1
@@ -31,7 +31,7 @@ TRANGE = [-2 7]; %window size [start time relative to epoc onset, entire duratio
 BASELINE_PER = [-5 -1]; % baseline period before stim
 ARTIFACT405 = Inf;
 ARTIFACT465 = Inf;
-disp(VERSION)
+
 if batch_analyze == 1
     myDir = uigetdir; %gets directory%
     myFiles = dir(myDir); %gets all tanks in directory%

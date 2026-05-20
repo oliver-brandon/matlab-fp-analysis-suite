@@ -4,31 +4,34 @@ clear; clc; close all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% Paramaters to Edit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figSavePath = '/Users/brandon/Desktop/'; % include trailing '/' at end of path
-saveFig = 0; % 1 = save, 0 = don't save
+saveFig = 1; % 1 = save, 0 = don't save
+figType = 2; % 1 = pdf, 2 = png
 plotSmooth = 1; % 1 = yes, 0 = no
 setBaseline = 1; % 1 = yes, 0 = no (adjusts signals to zero indicated by baseAdjust)
-baseAdjust = -2; % seconds on x axis to adjust baseline to
-smoothFactor = 50;
-TRANGE = [-2 12]; %window size [start time relative to epoc onset, entire duration]
-BASELINE_PER = [-3 -1]; % baseline period before epoc
+baseAdjust = -5; % seconds on x axis to adjust baseline to
 
-BLOCKPATH = '/Volumes/OLIVER/rDA-eCB/1790_Reinst1_Empty_NA'; % path to TDT data tank (folder containing TDT data)
-channel = 2; % 1 = mouse on A channel, 2 = mouse on C channel
-c1Color = 2; % color LED for channel 1, 1 = blue, 2 = green
+TRANGE = [-5 15]; %window size [start time relative to epoc onset, entire duration]
+BASELINE_PER = [-5 -1]; % baseline period before epoc
+
+BLOCKPATH = '/Users/brandon/Library/CloudStorage/GoogleDrive-bloliv95@gmail.com/My Drive/food-response/RMTg-GCaMP/mats/2388_VTOLC1.mat'; % path to TDT data tank (folder containing TDT data)
+channel = 1; % 1 = mouse on A channel, 2 = mouse on C channel
+c1Color = 1; % color LED for channel 1, 1 = blue, 2 = green
 c2Color = 1; % color LED for channel 2, 1 = blue, 2 = green
-dualFiber = 1; % 1 = dual fiber, 0 = single fiber
-REF_EPOC = 'aRewPoke'; % Stimulation event to center on
+dualFiber = 0; % 1 = dual fiber, 0 = single fiber
+REF_EPOC = 'RL1/'; % Stimulation event to center on
+% St1/ = Cue
+% levers = Lever presses in order of occurance
 
 % PRL %
 withinprl = 0; % 1 = yes, 0 = no (if yes, extracts within-session prl related data)
 % Self Admin %
-selfadmin = 1; % 1 = yes, 0 = no (if yes, swaps onset with offset)
-FR = 1; % 0 = PR; Fixed-ratio (used to separate out rewarded and non-rewarded nosepokes)
+selfadmin = 0; % 1 = yes, 0 = no (if yes, swaps onset with offset)
+FR = 3; % 0 = PR; Fixed-ratio (used to separate out rewarded and non-rewarded nosepokes)
 
 % ROI (For Figure Titles) %
-channel1ROI = 'rDA3m DLS';
-channel2ROI = 'rDA3m NAc';
-dataType = 1; % 1 = tank, 2 = mat
+channel1ROI = 'GCaMP6f RMTg';
+channel2ROI = 'GCaMP6f RMTg';
+dataType = 2; % 1 = tank, 2 = mat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% Leave Code Below As Is %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,6 +40,7 @@ if dataType == 1
 elseif dataType == 2
     load(BLOCKPATH)
 end
+
 % Creates reward epoc from offset instead of onset (leave commented out if not plotting self-admin data)
 if selfadmin == 1
     if isfield(data.epocs,'aRw_')
@@ -52,8 +56,8 @@ if selfadmin == 1
         [data] = createEpoc(data, rewardedNosepokes, 'aRewPoke');
         [data] = createEpoc(data, nonrewardedNosepokes, 'aNoRewPoke');
         [data] = createEpoc(data, timeoutNosepokes, 'aTimeoutPoke');
-        
-    elseif isfield(data.epocs,'bRw_')
+    end  
+    if isfield(data.epocs,'bRw_')
         data.epocs.bReward.onset = data.epocs.bRw_.offset(1:end-1,:);
         data.epocs.bReward.offset = data.epocs.bRw_.onset(2:end,:);
         data.epocs.bReward.name = 'bReward';
@@ -66,6 +70,18 @@ if selfadmin == 1
         [data] = createEpoc(data, rewardedNosepokes, 'bRewPoke');
         [data] = createEpoc(data, nonrewardedNosepokes, 'bNoRewPoke');
         [data] = createEpoc(data, timeoutNosepokes, 'bTimeoutPoke');
+    end
+    if isfield(data.epocs, 'aRL_')
+        data.epocs.aActive.onset = data.epocs.aRL_.offset(1:end-1,:);
+        data.epocs.aActive.offset = data.epocs.aRL_.onset(2:end,:);
+        data.epocs.aActive.name = 'aActive';
+        data.epocs.aActive.data = ones(height(data.epocs.aActive.onset));
+    end
+    if isfield(data.epocs, 'bRL_')
+        data.epocs.bActive.onset = data.epocs.bRL_.offset(1:end-1,:);
+        data.epocs.bActive.offset = data.epocs.bRL_.onset(2:end,:);
+        data.epocs.bActive.name = 'bActive';
+        data.epocs.bActive.data = ones(height(data.epocs.bActive.onset));
     end
 else
     disp('')
@@ -92,22 +108,29 @@ if withinprl == 1
 end
 
 
+
 ARTIFACT405 = Inf;% variable created for artifact removal for 405 store
 ARTIFACT465 = Inf;% variable created for artifact removal for 465 store
 if channel == 1 && c1Color == 1
     STREAM_STORE1 = 'x405A';
     STREAM_STORE2 = 'x465A';
+    smoothFactor = 10;
 elseif channel == 1 && c1Color == 2
     STREAM_STORE1 = 'x405A';
     STREAM_STORE2 = 'x560A';
+    smoothFactor = 30;
 elseif channel == 2 && c2Color == 1
     STREAM_STORE1 = 'x405C';
     STREAM_STORE2 = 'x465C';
+    smoothFactor = 10;
 elseif channel == 2 && c2Color == 2
     STREAM_STORE1 = 'x405C';
     STREAM_STORE2 = 'x560C';
+    smoothFactor = 20;
 end
-
+if isfield(data.epocs, "events")
+    data.epocs = rmfield(data.epocs, 'events');
+end
 % Use TDTfilter to extract data around our epoc event
 % Using the 'TIME' parameter extracts data only from the time range around
 % our epoc event. Use the 'VALUES' parameter to specify allowed values of
@@ -123,8 +146,8 @@ if strcmp(STREAM_STORE1,'x405A') && dualFiber == 0
     task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
     ROI = channel1ROI; % Can change depending on ROI (used for figure title)
 elseif strcmp(STREAM_STORE1,'x405C') && dualFiber == 0
-    ID = brokenID(3); % integer following brokenID can be changed depending on what position the ID is in the file name
-    task = brokenID(4); % interger following brokenID can be changed depending on what position the task is in the file name
+    ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
+    task = brokenID(2); % interger following brokenID can be changed depending on what position the task is in the file name
     ROI = channel2ROI; % Can change depending on ROI (used for figure title)
 elseif strcmp(STREAM_STORE1,'x405A') && dualFiber == 1
     ID = brokenID(1); % integer following brokenID can be changed depending on what position the ID is in the file name
@@ -224,7 +247,7 @@ zallSmooth = zeros(size(zall));
 for k = 1:height(zall)
     zallSmooth(k,:) = smoothdata(zall(k,:),'movmean',smoothFactor);
 end
-meanZall_smooth = mean(zallSmooth);
+
 
 % Baseline correction for smoothed data
 if setBaseline == 1
@@ -244,7 +267,7 @@ if setBaseline == 1
 else
     disp('No baseline correction applied to smoothed signals')
 end
-
+meanZall_smooth = mean(zallSmooth);
 % Specic variables for within-session prl signal extraction
 if withinprl == 1
     zall_Smooth_acqlastFive = mean(zallSmooth(26:30,:))';
@@ -435,10 +458,18 @@ elseif plotSmooth == 1
     
     % Saves figure
     if saveFig == 1
-        % Save figure 3 to saveFigPath
-        file_name1 = char(strcat(figSavePath,TITLE,'.pdf'));
-        orient(f3,'landscape');
-        print(f3,file_name1,'-dpdf','-vector','-bestfit','');
+        if figType == 1
+            % Save figure 3 to saveFigPath
+            file_name1_pdf = char(strcat(figSavePath,TITLE,'.pdf'));
+            orient(f3,'landscape');
+            print(f3,file_name1_pdf,'-dpdf','-vector','-bestfit','');
+            
+        elseif figType == 2
+            file_name1_png = char(strcat(figSavePath,TITLE,'.png'));
+            orient(f3,'landscape');
+            print(f3,file_name1_png,'-dpng','-r300');
+        end
+            
     else
         disp('Figure not saved')
     end

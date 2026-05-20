@@ -46,12 +46,12 @@ for i = 1:numFiles
     
     load(FILEPATH);
     if dualFiber == 0
-        if isfield(data.epocs, 'cRewA') || isfield(data.epocs, 'cRewC')...
-                || isfield(data.epocs, 'iNoRewA') || isfield(data.epocs, 'iNoRewC')
-            fprintf('%s already infused...skipping (%d of %d)\n',name,i,numFiles)
-        else
-            fprintf('Infusing %s...(%d of %d)\n',name,i,numFiles)
-        end
+        % if isfield(data.epocs, 'cRewA') || isfield(data.epocs, 'cRewC')...
+        %         || isfield(data.epocs, 'iNoRewA') || isfield(data.epocs, 'iNoRewC')
+        %     fprintf('%s already infused...skipping (%d of %d)\n',name,i,numFiles)
+        % else
+        %     fprintf('Infusing %s...(%d of %d)\n',name,i,numFiles)
+        % end
         
         data = prl_epocs(data);
     elseif dualFiber == 1
@@ -69,10 +69,11 @@ for i = 1:numFiles
         else
             disp('File is missing TTLs')
         end
-        fprintf('Infusing %s...(%d of %d)\n',name,i,numFiles)
+        
         data = prl_df_epocs(data,TTLs);
     end
-    save(FILEPATH,"data")
+    SAVEPATH = fullfile(savDir,name);
+    save(SAVEPATH,"data")
     
 end
 

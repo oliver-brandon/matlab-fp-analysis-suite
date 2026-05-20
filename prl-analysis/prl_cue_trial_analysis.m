@@ -5,8 +5,8 @@ warning off
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 2; % baseline signal to include before TTL 
 baseline = [-3 -1]; % baseline signal for dFF/zscore
-zeroto = -0.5;
-amp_window = [0 2]; % time window to grab amplitude from
+zeroto = 0;
+amp_window = [0 timeWindow]; % time window to grab amplitude from
 auc_window = [0 timeWindow];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
@@ -14,11 +14,11 @@ sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 removeOutlierTrials = 0; % 1 = remove
 dualFiber = 1; % 1 = dual fiber, 0 = single fiber
-dualFiberChannel = 2; % 1 = dual fiber channel A, 2 = dual fiber channel C
+dualFiberChannel = 1; % 1 = dual fiber channel A, 2 = dual fiber channel C
 figsavepath = '/Users/brandon/My Drive/prl/PRL_GRABDA/cueByTrialFigs/';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('H:\My Drive\prl\PRL_GRABDA\sfn2023posterdata','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('/Users/brandon/personal-drive/optomouse-prime/opto-reversal/cue-stim/mats-cuestim-VTA/Ipsilateral','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -30,7 +30,7 @@ myFiles = myFiles(~startsWith({myFiles.name},{'.','..','._'}));
 myFiles = myFiles(endsWith({myFiles.name},'.mat'));
 numFiles = length(myFiles);
 IDs = {};
-treatList = {};
+% treatList = {};
 prl_phase = {};
 omitted = struct('file', {}, 'timestamp', {}, 'trial', {}, 'signal', {});
 allCueTrials = [];
@@ -44,12 +44,13 @@ for i = 1:numFiles
     brokenID = strsplit(name,'_');
     tempID = cellstr(brokenID(1));
     tempPhase = cellstr(brokenID(2));
-    tempTreat = cellstr(brokenID(3));
+    % tempTreat = cellstr(brokenID(3));
     IDs = vertcat(IDs,tempID);
-    treatList = vertcat(treatList,tempTreat);
+    % treatList = vertcat(treatList,tempTreat);
     prl_phase = vertcat(prl_phase,tempPhase);
     load(filename)
-    TITLE = strcat(tempID,{' '},tempPhase,{' '},tempTreat);
+    % TITLE = strcat(tempID,{' '},tempPhase,{' '},tempTreat);
+    TITLE = strcat(tempID,{' '},tempPhase);
     if dualFiber == 1
         if dualFiberChannel == 1
             ISOS = 'x405A';
@@ -154,6 +155,7 @@ for i = 1:numFiles
                 
     end
     idx = find(ts1>zeroto,1);
+    
     for n = 1:height(cueTT_raw)
         allTrialNum = [allTrialNum;n];
         allIDs = [allIDs;i];
@@ -210,15 +212,6 @@ for i = 1:numFiles
         end
     end
 
-    % for jj = 1:height(leverArray)
-    %     if leverArray(jj,2) == 1 || leverArray(jj,2) == 2
-    %         trialVal(jj,1) = 1;
-    %     elseif leverArray(jj,2) == 0
-    %         disp(filename)
-    %     else
-    %         trialVal(jj,1) = 0;
-    %     end
-    % end
     x = 1:1:length(cueAMP);
     f1 = figure;
     title(TITLE)

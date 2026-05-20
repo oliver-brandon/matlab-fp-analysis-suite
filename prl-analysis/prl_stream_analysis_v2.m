@@ -4,21 +4,22 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 2; % baseline signal to include before TTL 
-baseline = [-2 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
+baseline = [-3 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
 amp_window = [0 5]; % time window to grab amplitude from
 auc_window = [0 5];
 t = 5; % seconds to clip from start of streams
 N = 10; %Downsample N times
+smoothFactor = 30;
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
-baseAdjust = -2; % adjust baseline of signals to 'baseAdjust' seconds
+baseAdjust = 0; % adjust baseline of signals to 'baseAdjust' seconds
 toPlot = 0; % 1 = plot figures, 0 = don't plot
-dualFiber = 0; % 1 = dual fiber, 0 = single fiber
+dualFiber = 1; % 1 = dual fiber, 0 = single fiber
 dFchannel = 1; % 1 = A Channel, 2 = C Channel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 myDir = uigetdir(...
-    '/Users/brandon/personal-drive/prl/GrabDA/dls-nac/prl/mats/All','Choose the .mat files you want to analyze.'...
+    '/Users/brandon/personal-drive/prl','Choose the .mat files you want to analyze.'...
     ); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
@@ -443,6 +444,11 @@ for i = 1:numFiles
         meanCueBase_dFF = mean(levers_dFF(n,baseSt:baseEn));
         stdCueBase_dFF = std(levers_dFF(n,baseSt:baseEn));
         levers_z(n,1:epocArrayLen) = (levers_dFF(n,1:epocArrayLen) - meanCueBase_dFF) / stdCueBase_dFF;
+        
+        
+        levers_z(n,1:epocArrayLen) = smoothdata(levers_z(n,1:epocArrayLen),'movmean',smoothFactor);
+        
+
         % adjusts streams to baseline of zero at -0.5s %
         if levers_z(n,idx) < 0
             val = levers_z(n,idx);
@@ -584,6 +590,9 @@ for i = 1:numFiles
             meanBase_dFF = mean(streams_dFF(j,baseSt:baseEn));
             stdBase_dFF = std(streams_dFF(j,baseSt:baseEn));
             streams_z(j,1:epocArrayLen) = (streams_dFF(j,1:epocArrayLen) - meanBase_dFF) / stdBase_dFF;
+            
+            streams_z(j,1:epocArrayLen) = smoothdata(streams_z(j,1:epocArrayLen),'movmean',smoothFactor);
+            
             % adjusts streams to baseline of zero at -0.5s %
             if streams_z(j,idx) < 0
                 val = streams_z(j,idx);

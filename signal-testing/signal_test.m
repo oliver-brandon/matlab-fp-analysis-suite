@@ -9,31 +9,33 @@ close all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figsavepath = '/Users/brandon/Desktop/'; % must include backslash at the end of the path
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-t = 600; % first t seconds are discarded to remove laser on artifact (Default 30)
+t = 30; % first t seconds are discarded to remove laser on artifact (Default 30)
 N = 100; % downsample signal N times (Default 100)
-channel = 1; % 1 = mouse on A channel, 2 = mouse on C channel
-figSnip = [2300, 2420];
+channel = 2; % 1 = mouse on A channel, 2 = mouse on C channel
+figSnip = [60, 100];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Users/brandon/personal-drive/collaborations/yamanaka-cat-saliva', 'Select a tank to plot');
+TANK_NAME = '/Users/brandon/personal-drive/prl/GrabDA-eCB/mats/1997_Rev2_NA.mat';
+%TANK_NAME = uigetdir('/Users/brandon/personal-drive/prl/GrabDA-eCB', 'Select a tank to plot');
 [~,name,~] = fileparts(TANK_NAME);
 brokenID = strsplit(name,'_');
 if channel == 1
     ISOS = 'x405A'; % set name of isosbestic signal
-    SIGNAL = 'x465A'; % set name of SIGNAL signal
+    SIGNAL = 'x560A'; % set name of SIGNAL signal
     animalID = char(brokenID{1});
     region = char(brokenID{2});
 elseif channel == 2
     ISOS = 'x405C'; % set name of isosbestic signal
     SIGNAL = 'x465C'; % set name of SIGNAL signal
-    animalID = char(brokenID{3});
-    region = char(brokenID{4});
+    animalID = char(brokenID{1});
+    region = char(brokenID{2});
 end
 
 TITLE = strcat(animalID," ",region);
-data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams','epocs'});
+%data = TDTbin2mat(TANK_NAME, 'TYPE', {'streams','epocs'});
+load(TANK_NAME);
 ISOS_raw = data.streams.(ISOS).data;
 SIGNAL_raw = data.streams.(SIGNAL).data;
 
@@ -78,6 +80,7 @@ SIGNAL_Z = zScore(SIGNAL_dFF_detrend);
 ind1 = find(time > figSnip(1),1);
 ind2 = find(time > figSnip(2),1);
 SIGNAL_snip = SIGNAL_Z(ind1:ind2);
+rawSIGNAL_snip = SIGNAL_raw(ind1:ind2);
 time_snip = time(ind1:ind2);
 
 x1 = ceil(time(1,1));

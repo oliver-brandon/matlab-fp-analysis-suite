@@ -1,7 +1,12 @@
+% Paste into command window: sigs = [];
+% Paste signals into sigs variable (long format, not wide)
+% Adjusted/smoothed signals will be in smooth_sigs1 or smooth_sigs2
+
 close all;
 clear smooth_sigs1 smooth_sigs2;
-adjust_only = 1;
-zeroto = 0;
+adjust_only = 1; % 0 = smooth + adjust, 1 = adjust only
+zeroto = 0; % time in seconds to zero signal to
+plotSigs = 0; % 1 = yes, 0 = no
 
 if adjust_only == 1
     smooth_sigs1 = sigs;
@@ -13,7 +18,7 @@ else
             smooth_sigs2(:,i) = NaN;
             continue
         end
-        smooth_sigs1(:,i) = smoothdata(sigs(:,i),'movmean',25);
+        smooth_sigs1(:,i) = smoothdata(sigs(:,i),'movmean',20);
         smooth_sigs2(:,i) = smoothdata(sigs(:,i),'movmean',60);
     end
 end
@@ -48,9 +53,14 @@ for j = 1:size(smooth_sigs2,2)
         smooth_sigs2(1:end,j) = smooth_sigs2(1:end,j) - abs(diff);
     end    
 end
-subplot(3,1,1)
-plot(sigs)
-subplot(3,1,2)
-plot(smooth_sigs1)
-subplot(3,1,3)
-plot(smooth_sigs2)
+if plotSigs == 1
+    subplot(3,1,1)
+    plot(sigs)
+    subplot(3,1,2)
+    plot(smooth_sigs1)
+    subplot(3,1,3)
+    plot(smooth_sigs2)
+else
+    disp('')
+end
+sigs = [];

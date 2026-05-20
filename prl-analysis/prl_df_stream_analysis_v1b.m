@@ -4,11 +4,11 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 5; % baseline signal to include before TTL 
-baseline = [-3 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
+baseline = [-5 -1]; % baseline signal for dFF/zscore (seconds before onset, positive integer)
 amp_window = [0 timeWindow]; % time window to grab amplitude from
-auc_window = [-1 timeWindow];
+auc_window = [0 timeWindow];
 t = 10; % seconds to clip from start of streams
-N = 1; %Downsample N times
+N = 10; %Downsample N times
 sigHz = 1017/N;
 epocArrayLen = round(sigHz * (timeWindow + baseWindow));
 toPlot = 0; % 1 = plot figures, 0 = don't plot

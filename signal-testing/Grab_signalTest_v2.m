@@ -11,25 +11,21 @@ VERSION = 'v2.0';
 %%%%%%%%%%%%%%%%%%%%%%%%% Variables to Change %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figsavetype = '.pdf'; % can change to '.jpg', '.fig', etc.
-t = 10; % first t seconds are discarded to remove LED on artifact
+t = 30; % first t seconds are discarded to remove LED on artifact
 N = 1000; % downsample signal N times
-channel = 1; % 1 = A, 2 = C
+channel = 2; % 1 = A, 2 = C
 session_durration = 3600;
 fontSize = 8; % font size for figure ylabels
 figureSize = [100,100,1500,800]; % Set the desired figure size
 figSnip = [200, 300];
+BLOCKPATH = '/Users/brandon/personal-drive/self-admin/food_sa/rDA3m/1790_FR3-9_Empty_NA.mat';
+dataType = 2; % 1 = tank, 2 = mat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('Grab_signalTest %s\n',VERSION)
-% Gets tank from UI pop-up window
-TANK_NAME = uigetdir('/Volumes/KINGSTON/FIBRE PHOTOMETRY - SYNAPSE', 'Select a tank to plot');
-if TANK_NAME == 0
-    disp('Select a file to start!')
-    return
-end
 
-figsavepath = strcat(TANK_NAME,'/');
-[~,name,~] = fileparts(TANK_NAME);
+figsavepath = strcat(BLOCKPATH,'/');
+[~,name,~] = fileparts(BLOCKPATH);
 brokenID = strsplit(name,'_');
 if channel == 1
     ISOS = 'x405A'; % set name of isosbestic signal
@@ -49,7 +45,13 @@ end
 
 
 TITLE = strcat(ID,{' '},Grab_Sensor,{' '},ROI);
-data = TDTbin2mat(TANK_NAME, 'T2', session_durration,'TYPE', {'streams','epocs'});
+if dataType == 1
+    data = TDTbin2mat(BLOCKPATH, 'T2', session_durration,'TYPE', {'streams','epocs'});
+elseif dataType == 2
+    load(BLOCKPATH);
+else
+    error('Invalid data type.')
+end
 ISOS_raw = data.streams.(ISOS).data;
 Grab_raw = data.streams.(Grab).data;
 

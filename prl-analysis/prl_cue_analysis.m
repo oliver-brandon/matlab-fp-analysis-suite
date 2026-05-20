@@ -5,7 +5,7 @@ warning off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timeWindow = 5; % the number of seconds after the onset of a TTL to analyze
 baseWindow = 2; % baseline signal to include before TTL 
-baseline = [-2 -1]; % baseline signal for dFF/zscore
+baseline = [-3 -1]; % baseline signal for dFF/zscore
 amp_window = [0.5 1]; % time window to grab amplitude from
 auc_window = [0 5];
 t = 5; % seconds to clip from start of streams
@@ -17,10 +17,10 @@ baseAdjust = -2;
 removeOutlierTrials = 0; % 1 = remove
 plotOmitted = 0; % 1 = plot
 removeFirstTrial = 1; % 1 = keep, 2 = remove
-dualFiber = 0; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
+dualFiber = 1; % 1 = dual, 0 = single; Change ISOS/SIGNAL manually
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-myDir = uigetdir('/Users/brandon/My Drive/prl/PRL_GRABDA','Choose the .mat files you want to analyze.'); %gets directory%
+myDir = uigetdir('/Users/brandon/personal-drive/optomouse-prime/opto-reversal/cue-stim/mats-cuestim-VTA/Ipsilateral','Choose the .mat files you want to analyze.'); %gets directory%
 if myDir == 0
     disp("Select a .mat file to start")
     return
@@ -42,20 +42,37 @@ for i = 1:numFiles
     brokenID = strsplit(name,'_');
     tempID = cellstr(brokenID(1));
     tempPhase = cellstr(brokenID(2));
-    tempTreat = cellstr(brokenID(3));
+    tempTreat = cellstr(brokenID(2));
     IDs = vertcat(IDs,tempID);
     treatList = vertcat(treatList,tempTreat);
     prl_phase = vertcat(prl_phase,tempPhase);
     load(filename)
     if dualFiber == 1
-        ISOS = 'x405C';
-        SIGNAL = 'x465C';
+        ISOS = 'x405A';
+        SIGNAL = 'x465A';
+        % SIGNAL = 'x560A';
         if isfield(data.epocs,'St1_')
             cue = data.epocs.St1_.onset;
-            cRew = data.epocs.cRewA.onset;
-            cNoRew = data.epocs.cNoRewA.onset;
-            iRew = data.epocs.iRewA.onset;
-            iNoRew = data.epocs.iNoRewA.onset;
+            if isfield(data.epocs, 'cRewA')
+                cRew = data.epocs.cRewA.onset;
+            else
+                cRew = [];
+            end
+            if isfield(data.epocs, 'cNoRewA')
+                cNoRew = data.epocs.cNoRewA.onset;
+            else
+                cNoRew = [];
+            end
+            if isfield(data.epocs, 'iRewA')
+                iRew = data.epocs.iRewA.onset;
+            else
+                iRew = [];
+            end
+            if isfield(data.epocs, 'iNoRewA')
+                iNoRew = data.epocs.iNoRewA.onset;
+            else
+                iNoRew = [];
+            end
         elseif isfield(data.epocs,'St2_')
             cue = data.epocs.St2_.onset;
             cRew = data.epocs.cRewC.onset;

@@ -1,11 +1,11 @@
 clear; close all
 
-channel = 2;
+channel = 1;
 camNumber = 2;
 smoothFactor = 50;
 fit = 1; % fit for polynomial
-dataType = 1; % 1 = mat, 2 = tank
-manualTTL = 2; % 1 = yes, 0 = no, 2 = TTLs in mat file
+dataType = 2; % 1 = mat, 2 = tank
+manualTTL = 1; % 1 = yes, 0 = no, 2 = TTLs in mat file
 N = 51; %Downsample N times
 BLOCKPATH = '/Users/brandon/personal-drive/hot-wheels/data/wheel-running-mats/unlocked/DA40_UL_Day7_10_3_2022.mat';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -23,7 +23,7 @@ VERSION = "3";
 fprintf("VERSION: %s\n",VERSION)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ttlType = 0; % 0 = PRL, 1 = Self Admin
+ttlType = 2; % 0 = PRL, 1 = Self Admin, 2 = VTO
 dualFiber = 0; % 0 = singleFiber file, 1 = dualFiber file 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -130,6 +130,7 @@ if ttlType == 0
                         if isfield(data.epocs,'CL2_') == 1
                             data.epocs = rmfield(data.epocs, {'CL2_'});
                         end
+                       
                         taskA = char(brokenID{2});
                         treatmentA = char(brokenID{3});
                         newfilenameA = strcat(animalIDA,'_',taskA,'_',treatmentA,'.mat');
@@ -159,6 +160,9 @@ if ttlType == 0
                         end
                         if isfield(data.epocs,'CL1_') == 1
                             data.epocs = rmfield(data.epocs, {'CL1_'});
+                        end
+                        if isfield(data.epocs,'Rw1_') == 1
+                            data.epocs = rmfield(data.epocs, {'Rw1_','St1_','RL1_','Cam1','HL1_'});
                         end
                         taskC = char(brokenID{5});
                         treatmentC = char(brokenID{6});
@@ -284,6 +288,118 @@ elseif ttlType == 1
                         end
                         if isfield(data.epocs,'aLL_') == 1
                             data.epocs = rmfield(data.epocs, {'aLL_'});
+                        end
+                        taskC = char(brokenID{4});
+                        newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
+                        file_pathnameC = fullfile(savDir,newfilenameC);
+                        if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does
+                            fprintf("%s already exists...skipping\n",newfilenameC)
+                            totFiles = totFiles - 1;
+                            continue
+                        end
+                        disp("Saving stream C...")
+                        save(file_pathnameC,"data")
+                        disp("Done.")
+                        clear data
+                    end
+                end
+            end
+        end
+    end
+elseif ttlType == 2
+    for i = 1:numFiles
+        FILEPATH = fullfile(myDir,myFiles(i).name);
+        [~,name,~] = fileparts(FILEPATH);
+        emptyID = 'Empty';
+        brokenID = strsplit(name,'_');
+        animalIDA = char(brokenID{1});
+        animalIDC = char(brokenID{3});
+        emptylogicA = strcmp(animalIDA,emptyID);
+        emptylogicC = strcmp(animalIDC,emptyID);
+        load(FILEPATH);
+        if dualFiber == 1
+            for subjects = 1:2
+                if subjects == 1
+                    if emptylogicA == 1
+                        disp("Stream A is empty")
+                        totFiles = totFiles - 1;
+                        continue
+                    elseif emptylogicA == 0
+                        if isfield(data.epocs,'Rw2_') == 1
+                            data.epocs = rmfield(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
+                        end
+                        taskA = char(brokenID{2});
+                        newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
+                        file_pathnameA = fullfile(savDir,newfilenameA);
+                        if exist(file_pathnameA,"file") % checks if the file exists in savDir and skips if it does
+                            fprintf("%s already exists...skipping\n",newfilenameA)
+                            totFiles = totFiles - 1;
+                            continue
+                        end
+                        disp("Saving stream A...")
+                        save(file_pathnameA,"data")
+                        disp("Done.")
+                        clear data
+                    end
+                elseif subjects == 2
+                    if emptylogicC == 1
+                        disp("Stream C is empty")
+                        totFiles = totFiles - 1;
+                        continue
+                    elseif emptylogicC == 0
+                        if isfield(data.epocs,'Rw2_') == 1
+                            data.epocs = rmfield(data.epocs, {'Rw2_','RL2_','HL2_','Cam2'});
+                        end
+                        taskC = char(brokenID{4});
+                        newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
+                        file_pathnameC = fullfile(savDir,newfilenameC);
+                        if exist(file_pathnameC,"file") % checks if the file exists in savDir and skips if it does
+                            fprintf("%s already exists...skipping\n",newfilenameC)
+                            totFiles = totFiles - 1;
+                            continue
+                        end
+                        disp("Saving stream C...")
+                        save(file_pathnameC,"data")
+                        disp("Done.")
+                        clear data
+                    end
+                end
+            end
+        else
+            for subjects = 1:2
+                if subjects == 1
+                    if emptylogicA == 1
+                        disp("Stream A is empty")
+                        totFiles = totFiles - 1;
+                        continue
+                    elseif emptylogicA == 0
+                        data.streams = rmfield(data.streams, {'x405C','x465C'});
+                        if isfield(data.epocs,'Rw2_') == 1
+                            data.epocs = rmfield(data.epocs, {'Rw2_','St2_','RL2_','HL2_','Cam2'});
+                        end
+                        taskA = char(brokenID{2});
+                        newfilenameA = strcat(animalIDA,'_',taskA,'.mat');
+                        file_pathnameA = fullfile(savDir,newfilenameA);
+                        if exist(file_pathnameA,"file") % checks if the file exists in savDir and skips if it does
+                            fprintf("%s already exists...skipping\n",newfilenameA)
+                            totFiles = totFiles - 1;
+                            continue
+                        end
+                        disp("Saving stream A...")
+                        save(file_pathnameA,"data")
+                        disp("Done.")
+                        clear data
+                    end
+                elseif subjects == 2
+                    load(FILEPATH);
+                    if emptylogicC == 1
+                        disp("Stream C is empty")
+                        totFiles = totFiles - 1;
+                        continue
+                    elseif emptylogicC == 0
+                        data.streams = rmfield(data.streams, {'x405A','x465A'});
+                        if isfield(data.epocs,'Rw1_') == 1
+                            data.epocs = rmfield(data.epocs, {'Rw1_','St1_','RL1_','HL1_','Cam1'});
                         end
                         taskC = char(brokenID{4});
                         newfilenameC = strcat(animalIDC,'_',taskC,'.mat');
